@@ -1,0 +1,24 @@
+version: 1
+updates:
+  - package-ecosystem: 'github-actions'
+    directory: '/'
+    schedule:
+      interval: 'weekly'
+
+  - package-ecosystem: 'docker'
+    directory: 'compose/'
+    schedule:
+      interval: 'weekly'
+    groups:
+      docker-builds:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'pip'
+    directory: '/seeder'
+    schedule:
+      interval: 'weekly'
+    groups:
+      seeder-requirements:
+        patterns:
+          - '*'
