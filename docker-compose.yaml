@@ -25,5 +25,20 @@ services:
       - ./migrations:/flyway/sql
     command: migrate
 
+  seeder:
+      build:
+        context: .
+        dockerfile: ./compose/Dockerfile.fastapi.seeder
+      container_name: seeder
+      depends_on:
+        - postgres
+      env_file:
+        - .env
+      ports:
+        - "8000:8000"
+      volumes:
+        - ./seeder:/app
+      command: fastapi dev --host 0.0.0.0 --port 8000
+
 volumes:
   postgres-data:
