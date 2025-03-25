@@ -1,7 +1,8 @@
-from sqlalchemy import Column, Integer, String, Text, ForeignKey, Numeric, TIMESTAMP, CheckConstraint
+from sqlalchemy import Column, Integer, Text, ForeignKey, Numeric, TIMESTAMP
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
+
 
 class Customer(Base):
     __tablename__ = "customers"
@@ -13,6 +14,7 @@ class Customer(Base):
     country = Column(Text)
     created_at = Column(TIMESTAMP)
 
+
 class Product(Base):
     __tablename__ = "products"
     id = Column(Integer, primary_key=True)
@@ -22,6 +24,7 @@ class Product(Base):
     stock_quantity = Column(Integer, nullable=False, default=0)
     created_at = Column(TIMESTAMP)
 
+
 class Order(Base):
     __tablename__ = "orders"
     id = Column(Integer, primary_key=True)
@@ -30,6 +33,7 @@ class Order(Base):
     total = Column(Numeric(10, 2))
     created_at = Column(TIMESTAMP)
 
+
 class OrderItem(Base):
     __tablename__ = "order_items"
     id = Column(Integer, primary_key=True)
@@ -37,6 +41,7 @@ class OrderItem(Base):
     product_id = Column(Integer, ForeignKey("products.id"), nullable=False)
     quantity = Column(Integer, nullable=False)
     price_at_purchase = Column(Numeric(10, 2), nullable=False)
+
 
 class Payment(Base):
     __tablename__ = "payments"

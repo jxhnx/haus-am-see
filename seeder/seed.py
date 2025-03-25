@@ -13,16 +13,18 @@ fake = Faker()
 
 def create_customer(db) -> Customer:
     customer = Customer(
-        full_name=random.choice([
-            fake.name(),
-            f"{fake.first_name()} {fake.last_name()[0]}.",
-            f"{fake.first_name()} {fake.last_name()} {fake.last_name()}",
-        ]),
+        full_name=random.choice(
+            [
+                fake.name(),
+                f"{fake.first_name()} {fake.last_name()[0]}.",
+                f"{fake.first_name()} {fake.last_name()} {fake.last_name()}",
+            ]
+        ),
         email=f"{fake.user_name()}.{random.randint(1000, 999999)}@{fake.free_email_domain()}",
         address=fake.street_address(),
         city=fake.city(),
         country=fake.country(),
-        created_at=fake.date_time_this_year()
+        created_at=fake.date_time_this_year(),
     )
     db.add(customer)
     return customer
@@ -31,10 +33,12 @@ def create_customer(db) -> Customer:
 def create_product(db) -> Product:
     product = Product(
         name=fake.word(),
-        category=random.choice(['electronics', 'books', 'toys', 'clothing', 'kitchen', 'sports']),
+        category=random.choice(
+            ["electronics", "books", "toys", "clothing", "kitchen", "sports"]
+        ),
         price=round(random.uniform(5.0, 300.0), 2),
         stock_quantity=random.randint(0, 100),
-        created_at=fake.date_time_this_year()
+        created_at=fake.date_time_this_year(),
     )
     db.add(product)
     return product
@@ -43,9 +47,9 @@ def create_product(db) -> Product:
 def create_order(db, customer_id: int) -> Order:
     order = Order(
         customer_id=customer_id,
-        status=random.choice(['pending', 'shipped', 'delivered', 'cancelled']),
+        status=random.choice(["pending", "shipped", "delivered", "cancelled"]),
         total=0,
-        created_at=dt.now(timezone.utc)
+        created_at=dt.now(timezone.utc),
     )
     db.add(order)
     return order
@@ -59,7 +63,7 @@ def create_order_items(db, order_id: int, products: list[Product]) -> float:
             order_id=order_id,
             product_id=product.id,
             quantity=quantity,
-            price_at_purchase=product.price
+            price_at_purchase=product.price,
         )
         db.add(item)
         total += quantity * product.price
@@ -67,13 +71,13 @@ def create_order_items(db, order_id: int, products: list[Product]) -> float:
 
 
 def create_payment(db, order_id: int, amount: float):
-    status = random.choices(['paid', 'pending', 'failed'], weights=[0.75, 0.15, 0.1])[0]
+    status = random.choices(["paid", "pending", "failed"], weights=[0.75, 0.15, 0.1])[0]
     payment = Payment(
         order_id=order_id,
-        payment_method=random.choice(['credit_card', 'paypal', 'bank_transfer']),
-        paid_at=dt.now(timezone.utc) if status == 'paid' else None,
+        payment_method=random.choice(["credit_card", "paypal", "bank_transfer"]),
+        paid_at=dt.now(timezone.utc) if status == "paid" else None,
         amount=amount,
-        status=status
+        status=status,
     )
     db.add(payment)
 

@@ -17,3 +17,7 @@ FastAPI is used to seed the database with a full load and ongoing deltas. Check 
 Migrations are handled by flyway in `migrations/`. To apply migrations, run:
 
 `docker compose up flyway`
+
+# Development
+
+Pre-commit is used for linting. Run `pre-commit install` once to initialize it for this repo.

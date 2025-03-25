@@ -9,6 +9,7 @@ from contextlib import asynccontextmanager
 setup_logging()
 logger = logging.getLogger(__name__)
 
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     app.state.ingestion_task = None
@@ -18,19 +19,14 @@ async def lifespan(app: FastAPI):
         app.state.ingestion_task.cancel()
         logger.info("Seeder ingestion task cancelled on shutdown")
 
+
 app = FastAPI(lifespan=lifespan)
 
+
 @app.post("/seed/full")
-async def full_load(
-    count: int = Query(10_000),
-    batch_size: int = Query(1000)
-):
+async def full_load(count: int = Query(10_000), batch_size: int = Query(1000)):
     await run_in_threadpool(seed_initial_data, count, batch_size)
-    return {
-        "status": "success",
-        "records_created": count,
-        "batch_size": batch_size
-    }
+    return {"status": "success", "records_created": count, "batch_size": batch_size}
 
 
 @app.post("/seed/start")
@@ -75,12 +71,13 @@ async def stop_ingestion():
     logger.warning("No ingestion task running.")
     return {"status": "not running"}
 
+
 @app.get("/healthz")
 def healthz():
     status = {
         "app": "ok",
         "ingestion_running": bool(
             app.state.ingestion_task and not app.state.ingestion_task.done()
-        )
+        ),
     }
     return status
