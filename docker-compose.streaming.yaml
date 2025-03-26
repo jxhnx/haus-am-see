@@ -15,7 +15,41 @@ services:
     depends_on:
       - zookeeper
     ports:
-      - "9092:9092"
+      - '9092:9092'
     env_file:
       - .env
 
+  connect:
+    build:
+      context: .
+      dockerfile: ./compose/Dockerfile.debeziumConnect
+    container_name: connect
+    depends_on:
+      - kafka
+    ports:
+      - '8083:8083'
+    env_file:
+      - .env
+
+  connect-init:
+    build:
+      context: .
+      dockerfile: ./compose/Dockerfile.curl
+    container_name: connect-init
+    depends_on:
+      - connect
+    env_file:
+      - .env
+    volumes:
+      - ./connectors:/connectors
+    entrypoint: /bin/sh
+    command: >
+      -c '
+        for template in /connectors/*.template.json; do
+          json="$${template%.template.json}.json"
+          envsubst < "$$template" > "$$json" &&
+          curl -X POST -H "Content-Type: application/json" --data "@$$json" http://connect:8083/connectors;
+        done
+      '
+    profiles:
+      - manual

@@ -31,6 +31,15 @@ FastAPI is used to seed the database with a full load and ongoing deltas. Check 
 
 ## Kafka Streaming
 
+Kafka is used for Streaming.
+
+### Connectors
+
+All connectors are defined in connectors/\*.template.json; use `docker compose -f docker-compose.streaming.yaml up connect-init` to apply the templates, where variables are substituted from `.env`.
+
+List connectores with `curl http://localhost:8083/connectors`
+Delete connector with, e.g., `curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector`
+
 # Development
 
 Pre-commit is used for linting. Run `pre-commit install` once to initialize it for this repo.
