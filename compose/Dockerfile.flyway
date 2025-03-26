@@ -1,1 +1,1 @@
-FROM flyway/flyway:11.4
+FROM flyway/flyway:11.5
