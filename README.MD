@@ -40,6 +40,8 @@ All connectors are defined in connectors/\*.template.json; use `docker compose -
 List connectores with `curl http://localhost:8083/connectors` \
 Delete connector with, e.g., `curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector`
 
+Currently, CDC for Postgres is handled by Debezium. This includes (a) the additon of the connector plugin to the connect image `Dockerfile.connect` (b) the creation of the debezium user with the appropritate roles in Postgres `migrations/V2__create_debezium_user.sql` (c) the proper connector config `connectors/debezium-postgres.template.json` (d) Postgres' write-ahead log set to allow logical replication, see `wal_level = logical` in `compose/postgresql.custom.conf`.
+
 ### Topics
 
 Strategy, example with Postgres CDC:
