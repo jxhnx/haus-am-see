@@ -22,7 +22,7 @@ services:
   connect:
     build:
       context: .
-      dockerfile: ./compose/Dockerfile.debeziumConnect
+      dockerfile: ./compose/Dockerfile.connect
     container_name: connect
     depends_on:
       - kafka
