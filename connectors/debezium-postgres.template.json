@@ -1,0 +1,22 @@
+{
+  "name": "storefront-postgres-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "database.hostname": "host.docker.internal",
+    "database.port": "4444",
+    "database.user": "${DEBEZIUM_USER}",
+    "database.password": "${DEBEZIUM_PASSWORD}",
+    "database.dbname": "storefront",
+    "database.server.name": "storefront",
+    "topic.prefix": "storefront",
+    "plugin.name": "pgoutput",
+    "slot.name": "storefront_slot",
+    "publication.name": "${DEBEZIUM_STOREFRONT_PUBLICATION_NAME}",
+    "tombstones.on.delete": "false",
+    "snapshot.mode": "initial",
+    "key.converter": "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://${SCHEMA_REGISTRY_HOST}",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://${SCHEMA_REGISTRY_HOST}"
+  }
+}
