@@ -1,1 +1,10 @@
+#####
+# application
+
+# filled templates
+connectors/*.json
+!connectors/*.template.json
+
+#####
+# default
 __pycache__
