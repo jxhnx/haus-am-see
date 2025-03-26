@@ -31,6 +31,20 @@ services:
     env_file:
       - .env
 
+  akhq:
+    build:
+      context: .
+      dockerfile: ./compose/Dockerfile.akhq
+    container_name: akhq
+    depends_on:
+      - kafka
+    ports:
+      - '9000:8080'
+    env_file:
+      - .env
+    volumes:
+      - ./compose/akhq.application.yml:/app/application.yml
+
   connect-init:
     build:
       context: .

@@ -1,0 +1,12 @@
+akhq:
+  connections:
+    my-cluster:
+      properties:
+        bootstrap.servers: 'kafka:9092'
+      connect:
+        - name: kafka-connect
+          url: 'http://connect:8083'
+
+micronaut:
+  security:
+    enabled: false

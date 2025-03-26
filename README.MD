@@ -31,13 +31,13 @@ FastAPI is used to seed the database with a full load and ongoing deltas. Check 
 
 ## Kafka Streaming
 
-Kafka is used for Streaming.
+Kafka is used for Streaming. Check out AKHQ at [localhost:9000](http://localhost:9000) to manage Kafka.
 
 ### Connectors
 
 All connectors are defined in connectors/\*.template.json; use `docker compose -f docker-compose.streaming.yaml up connect-init` to apply the templates, where variables are substituted from `.env`.
 
-List connectores with `curl http://localhost:8083/connectors`
+List connectores with `curl http://localhost:8083/connectors` \
 Delete connector with, e.g., `curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector`
 
 # Development
