@@ -1,2 +1,2 @@
 jupyter==1.1.1
-confluent-kafka==2.8.2
+confluent-kafka[avro,schemaregistry]==2.8.2
