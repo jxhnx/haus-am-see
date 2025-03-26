@@ -2,7 +2,7 @@ akhq:
   connections:
     my-cluster:
       properties:
-        bootstrap.servers: 'kafka:9092'
+        bootstrap.servers: 'kafka:29092'
       connect:
         - name: kafka-connect
           url: 'http://connect:8083'
