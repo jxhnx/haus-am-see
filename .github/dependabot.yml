@@ -22,3 +22,12 @@ updates:
       seeder-requirements:
         patterns:
           - '*'
+
+  - package-ecosystem: 'pip'
+    directory: '/jupyter'
+    schedule:
+      interval: 'weekly'
+    groups:
+      jupyter-requirements:
+        patterns:
+          - '*'

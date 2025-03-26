@@ -49,4 +49,10 @@ Strategy, example with Postgres CDC:
 
 # Development
 
+## Playing around
+
+Jupyter notebooks can be found in `jupyter/`. Make sure to add the requirements in `jupyter/requirements.txt`.
+
+## Linting
+
 Pre-commit is used for linting. Run `pre-commit install` once to initialize it for this repo.
