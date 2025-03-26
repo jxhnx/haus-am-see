@@ -3,6 +3,9 @@ akhq:
     my-cluster:
       properties:
         bootstrap.servers: 'kafka:29092'
+      schema-registry:
+        url: 'http://schema-registry:8081'
+        type: 'confluent'
       connect:
         - name: kafka-connect
           url: 'http://connect:8083'

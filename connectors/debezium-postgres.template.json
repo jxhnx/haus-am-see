@@ -13,6 +13,10 @@
     "slot.name": "storefront_slot",
     "publication.name": "${DEBEZIUM_STOREFRONT_PUBLICATION_NAME}",
     "tombstones.on.delete": "false",
-    "snapshot.mode": "initial"
+    "snapshot.mode": "initial",
+    "key.converter": "io.confluent.connect.avro.AvroConverter",
+    "key.converter.schema.registry.url": "http://${SCHEMA_REGISTRY_HOST}",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://${SCHEMA_REGISTRY_HOST}"
   }
 }

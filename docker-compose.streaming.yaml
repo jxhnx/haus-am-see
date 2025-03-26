@@ -23,6 +23,20 @@ services:
     networks:
       - kafka-net
 
+  schema-registry:
+    build:
+      context: .
+      dockerfile: ./compose/Dockerfile.schemaRegistry
+    container_name: schema-registry
+    depends_on:
+      - kafka
+    ports:
+      - '8081:8081'
+    env_file:
+      - .env
+    networks:
+      - kafka-net
+
   connect:
     build:
       context: .
@@ -30,6 +44,7 @@ services:
     container_name: connect
     depends_on:
       - kafka
+      - schema-registry
     ports:
       - '8083:8083'
     env_file:
