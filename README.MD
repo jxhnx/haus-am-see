@@ -40,6 +40,13 @@ All connectors are defined in connectors/\*.template.json; use `docker compose -
 List connectores with `curl http://localhost:8083/connectors` \
 Delete connector with, e.g., `curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector`
 
+### Topics
+
+Strategy, example with Postgres CDC:
+
+- Default setting delete.retention.ms is `86400000` (1 day). That is, either downstream is polling all messages or the connector has to be reset to push a inital snapshot to Kafka. To reset the debezium connector, just delete it and re-run the connect-init.
+- Default setting cleanup.policy is `delete`. However, `compact,delete` can make sense for a lake house downstream.
+
 # Development
 
 Pre-commit is used for linting. Run `pre-commit install` once to initialize it for this repo.
