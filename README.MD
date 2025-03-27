@@ -1,19 +1,26 @@
-# Getting started
+# haus-am-see
 
-Playground meant to simulate end-to-end data pipelines.
+Data playground by the lake; meant to simulate end-to-end data pipelines.
 
-Running the stack, i.e., layers:
+## 🌊 Getting Started
 
-- Source and Seeder: `docker compose -f docker-compose.source.yaml`
-- Streaming: `docker compose -f docker-compose.streaming.yaml`
+Run the stack in layers:
 
-**Does it work? Do:**
+```bash
+# Source and Seeder
+docker compose -f docker-compose.source.yaml up
 
-1. Populate the source Postgres with an initial load or continuously with the FastAPI Seeder on [localhost:8000/docs](http://localhost:8000/docs)
-2. Connect to Postgres and check the created records. Connect to localhost:4444 with user:password as postgres:postgres.
-3. Check auto-created topics with messages & schema in AKHQ on [localhost:9000](http://localhost:9000)
+# Streaming
+docker compose -f docker-compose.streaming.yaml up
+```
 
-**Architecture**
+### 🔍 Does It Work? Do:
+
+1. **Seed the source DB:** Use FastAPI at [localhost:8000/docs](http://localhost:8000/docs) to insert an initial load or a continuous stream of records.
+2. **Verify in Postgres:** Connect to `localhost:4444` with user:password `postgres:postgres`.
+3. **Inspect Kafka:** Check AKHQ on [localhost:9000](http://localhost:9000) to view topics and schemas.
+
+### 🗺️ Architecture
 
 ```mermaid
 flowchart LR
@@ -45,55 +52,75 @@ flowchart LR
 
     %% Cross-zone
     Connect -- "polls CDC with Debezium" --> Postgres
-
 ```
 
-## Source (Postgres)
+## 🧱 Source (Postgres)
 
-Postgres is used as OLTP source. You can connect to it with localhost:4444 and postgres:postgres as root user:password (see .env). To create a new database, use:
+Postgres is used as OLTP source. The default `storefront` database is meant to simulate a web shop.
 
-`docker compose -f docker-compose.source.yaml exec postgres psql -U postgres -d postgres -c "CREATE DATABASE storefront;"`
+- Connect via `localhost:4444` | user:password: `postgres:postgres`
+- You can create a new database with, e.g.:
+  ```bash
+  docker compose -f docker-compose.source.yaml exec postgres psql -U postgres -d postgres -c "CREATE DATABASE storefront;"
+  ```
+- If meant to be persisted, add the new database to `postgres-init/init.sql`.
 
-Make sure to add the created database to `postgres-init/init.sql`, if meant to be permanent.
+### 📦 Migrations
 
-Hint: for a multi-database setup, you will need to adjust the flyway urls; for now, it is set up with the default `storefront` db; which is meant to simulate a web shop.
+Flyway is used as migration tool.
 
-### Migrations
+- Run migrations on the default `storefront` database via:
+  ```bash
+  docker compose -f docker-compose.source.yaml up flyway
+  ```
 
-Migrations are handled by flyway in `migrations/`. To apply migrations, run:
+### 🌱 FastAPI Seeder
 
-`docker compose -f docker-compose.source.yaml up flyway`
+Use the endpoints on [localhost:8000/docs](http://localhost:8000/docs) to run a initial fill or start/stop continuous, simulated traffic.
 
-### FastAPI Seeder
+## ⚡ Streaming (Kafka)
 
-FastAPI is used to seed the database with a full load and ongoing deltas. Check the Swagger UI at [localhost:8000/docs](http://localhost:8000/docs).
+Kafka is used for streaming CDC events from Postgres via Debezium. You can use the AKHQ UI at [localhost:9000](http://localhost:9000) to monitor/manage it.
 
-## Streaming (Kafka)
+### 🔌 Connectors
 
-Kafka is used for Streaming. Check out AKHQ at [localhost:9000](http://localhost:9000) to manage Kafka. For simplicity and to save resources, only 1 broker is used.
+All connectors are defined in `connectors/*.template.json`. envsubst is used to substitute `.env` variables.
 
-### Connectors
+- Register connectors:
+  ```bash
+  docker compose -f docker-compose.streaming.yaml up connect-init
+  ```
+- List registered connectors:
+  ```bash
+  curl http://localhost:8083/connectors
+  ```
+- Delete connector:
+  ```bash
+  curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector
+  ```
 
-All connectors are defined in connectors/\*.template.json; use `docker compose -f docker-compose.streaming.yaml up connect-init` to apply the templates, where variables are substituted from `.env`.
+### 🔄 Debezium CDC on Postgres
 
-List connectors with `curl http://localhost:8083/connectors` \
-Delete connector with, e.g., `curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector`
+Currently, CDC for Postgres is handled by Debezium. This includes:
 
-Currently, CDC for Postgres is handled by Debezium. This includes (a) the addition of the connector plugin to the connect image `Dockerfile.connect` (b) the creation of the Debezium user with the appropriate roles in Postgres `migrations/V2__create_debezium_user.sql` (c) the proper connector config `connectors/debezium-postgres.template.json` (d) Postgres' write-ahead log set to allow logical replication, see `wal_level = logical` in `compose/postgresql.custom.conf`.
+- the addition of the connector plugin to the `Dockerfile.connect` image
+- the creation of the Debezium user with the appropriate roles in Postgres `migrations/V2__create_debezium_user.sql`
+- the proper connector config `connectors/debezium-postgres.template.json`
+- Postgres' write-ahead log set to allow logical replication, see `wal_level=logical` in `compose/postgresql.custom.conf`
 
-### Topics
+### 🧵 Topics
 
 Strategy, example with Postgres CDC:
 
-- Default setting delete.retention.ms is `86400000` (1 day). That is, either downstream is polling all messages or the connector has to be reset to push a initial snapshot to Kafka. To reset the Debezium connector, just delete it and re-run the connect-init.
-- Default setting cleanup.policy is `delete`. However, `compact,delete` can make sense for a lake house downstream.
+- Default setting `delete.retention.ms` is `86400000` (1 day). That is, either downstream is polling all messages or the connector has to be reset to push an initial snapshot to Kafka. To reset the Debezium connector, delete it and re-run the connect-init.
+- Default setting `cleanup.policy` is `delete`. However, `compact,delete` can make sense for a lakehouse downstream.
 
-# Development
+## 🧪 Development
 
-## Playing around
+### 📓 Notebooks
 
 Jupyter notebooks can be found in `jupyter/`. Make sure to add the requirements in `jupyter/requirements.txt`.
 
-## Linting
+### 🧼 Linting
 
 Pre-commit is used for linting. Run `pre-commit install` once to initialize it for this repo.
