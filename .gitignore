@@ -1,6 +1,9 @@
 #####
 # application
 
+# data
+kafka-data
+
 # filled templates
 connectors/*.json
 !connectors/*.template.json

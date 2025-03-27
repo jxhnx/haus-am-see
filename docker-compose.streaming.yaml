@@ -1,27 +1,17 @@
 services:
-  zookeeper:
-    build:
-      context: .
-      dockerfile: ./compose/Dockerfile.zookeeper
-    container_name: zookeeper
-    env_file:
-      - .env
-    networks:
-      - kafka-net
-
   kafka:
     build:
       context: .
       dockerfile: ./compose/Dockerfile.kafka
     container_name: kafka
-    depends_on:
-      - zookeeper
     ports:
       - '9092:9092'
     env_file:
       - .env
     networks:
       - kafka-net
+    volumes:
+      - ./kafka-data:/var/lib/kafka/data
 
   schema-registry:
     build:
