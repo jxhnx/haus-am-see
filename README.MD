@@ -1,60 +1,126 @@
-# Getting started
+# haus-am-see
 
-Run the full stack with:
+Data playground by the lake; meant to simulate end-to-end data pipelines.
 
-`docker compose -f docker-compose.source.yaml -f docker-compose.streaming.yaml up`
+## 🌊 Getting Started
 
-Or layer by layer:
+Run the stack in layers:
 
-- OLTP Source and Seeder: `docker compose -f docker-compose.source.yaml`
-- Streaming: `docker compose -f docker-compose.streaming.yaml`
+```bash
+# Source and Seeder
+docker compose -f docker-compose.source.yaml up
 
-## OLTP Source
+# Streaming
+docker compose -f docker-compose.streaming.yaml up
+```
 
-Postgres is used as OLTP source. You can connect to it with localhost:4444 and postgres:postgres as root user:password. To create a new database, use:
+### 🔍 Does It Work? Do:
 
-`docker compose -f docker-compose.source.yaml exec postgres psql -U postgres -d postgres -c "CREATE DATABASE storefront;"`
+1. **Seed the source DB:** Use FastAPI at [localhost:8000/docs](http://localhost:8000/docs) to insert an initial load or a continuous stream of records.
+2. **Verify in Postgres:** Connect to `localhost:4444` with user:password `postgres:postgres`.
+3. **Inspect Kafka:** Check AKHQ on [localhost:9000](http://localhost:9000) to view topics and schemas.
 
-Make sure to add the created database to `postgres-init/init.sql`, if meant to be permanent.
+### 🗺️ Architecture
 
-Hint: for a multi-database setup, you will need to adjust the flyway urls; for now, it is set up with the defualt `storefront` db.
+```mermaid
+flowchart LR
+    %% Source zone
+    subgraph Source
+        direction TB
+        Seeder@{ shape: rounded, label: "FastAPI Seeder" }
+        Flyway@{ shape: hex, label: "Flyway" }
+        Postgres@{ shape: cyl, label: "PostgreSQL" }
 
-### Migrations
+        Seeder -- "writes" --> Postgres
+        Flyway -- "runs migrations" --> Postgres
+    end
 
-Migrations are handled by flyway in `migrations/`. To apply migrations, run:
+    %% Streaming zone
+    subgraph Streaming
+        direction TB
+        Connect@{ shape: procs, label: "Kafka Connect" }
+        SchemaRegistry@{ shape: rounded, label: "Schema Registry (Avro)" }
+        Kafka@{ shape: cyl, label: "Kafka" }
+        AKHQ@{ shape: stadium, label: "AKHQ UI" }
+        ConnectInit@{ shape: sl-rect, label: "Connect Init" }
 
-`docker compose -f docker-compose.source.yaml up flyway`
+        Connect -- "registers schema" --> SchemaRegistry
+        Connect -- "produces data" --> Kafka
+        AKHQ --> Kafka
+        ConnectInit -- "registers connectors" --> Connect
+    end
 
-### Seeder
+    %% Cross-zone
+    Connect -- "polls CDC with Debezium" --> Postgres
+```
 
-FastAPI is used to seed the database with a full load and ongoing deltas. Check the Swagger UI at [localhost:8000/docs](http://localhost:8000/docs).
+## 🧱 Source (Postgres)
 
-## Kafka Streaming
+Postgres is used as OLTP source. The default `storefront` database is meant to simulate a web shop.
 
-Kafka is used for Streaming. Check out AKHQ at [localhost:9000](http://localhost:9000) to manage Kafka.
+- Connect via `localhost:4444` | user:password: `postgres:postgres`
+- You can create a new database with, e.g.:
+  ```bash
+  docker compose -f docker-compose.source.yaml exec postgres psql -U postgres -d postgres -c "CREATE DATABASE storefront;"
+  ```
+- If meant to be persisted, add the new database to `postgres-init/init.sql`.
 
-### Connectors
+### 📦 Migrations
 
-All connectors are defined in connectors/\*.template.json; use `docker compose -f docker-compose.streaming.yaml up connect-init` to apply the templates, where variables are substituted from `.env`.
+Flyway is used as migration tool.
 
-List connectores with `curl http://localhost:8083/connectors` \
-Delete connector with, e.g., `curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector`
+- Run migrations on the default `storefront` database via:
+  ```bash
+  docker compose -f docker-compose.source.yaml up flyway
+  ```
 
-Currently, CDC for Postgres is handled by Debezium. This includes (a) the additon of the connector plugin to the connect image `Dockerfile.connect` (b) the creation of the debezium user with the appropritate roles in Postgres `migrations/V2__create_debezium_user.sql` (c) the proper connector config `connectors/debezium-postgres.template.json` (d) Postgres' write-ahead log set to allow logical replication, see `wal_level = logical` in `compose/postgresql.custom.conf`.
+### 🌱 FastAPI Seeder
 
-### Topics
+Use the endpoints on [localhost:8000/docs](http://localhost:8000/docs) to run a initial fill or start/stop continuous, simulated traffic.
+
+## ⚡ Streaming (Kafka)
+
+Kafka is used for streaming CDC events from Postgres via Debezium. You can use the AKHQ UI at [localhost:9000](http://localhost:9000) to monitor/manage it.
+
+### 🔌 Connectors
+
+All connectors are defined in `connectors/*.template.json`. envsubst is used to substitute `.env` variables.
+
+- Register connectors:
+  ```bash
+  docker compose -f docker-compose.streaming.yaml up connect-init
+  ```
+- List registered connectors:
+  ```bash
+  curl http://localhost:8083/connectors
+  ```
+- Delete connector:
+  ```bash
+  curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector
+  ```
+
+### 🔄 Debezium CDC on Postgres
+
+Currently, CDC for Postgres is handled by Debezium. This includes:
+
+- the addition of the connector plugin to the `Dockerfile.connect` image
+- the creation of the Debezium user with the appropriate roles in Postgres `migrations/V2__create_debezium_user.sql`
+- the proper connector config `connectors/debezium-postgres.template.json`
+- Postgres' write-ahead log set to allow logical replication, see `wal_level=logical` in `compose/postgresql.custom.conf`
+
+### 🧵 Topics
 
 Strategy, example with Postgres CDC:
 
-- Default setting delete.retention.ms is `86400000` (1 day). That is, either downstream is polling all messages or the connector has to be reset to push a inital snapshot to Kafka. To reset the debezium connector, just delete it and re-run the connect-init.
-- Default setting cleanup.policy is `delete`. However, `compact,delete` can make sense for a lake house downstream.
+- Default setting `delete.retention.ms` is `86400000` (1 day). That is, either downstream is polling all messages or the connector has to be reset to push an initial snapshot to Kafka. To reset the Debezium connector, delete it and re-run the connect-init.
+- Default setting `cleanup.policy` is `delete`. However, `compact,delete` can make sense for a lakehouse downstream.
 
-# Development
+## 🧪 Development
 
-## Playing around
+### 📓 Notebooks
 
 Jupyter notebooks can be found in `jupyter/`. Make sure to add the requirements in `jupyter/requirements.txt`.
 
-## Linting
+### 🧼 Linting
 
 Pre-commit is used for linting. Run `pre-commit install` once to initialize it for this repo.
