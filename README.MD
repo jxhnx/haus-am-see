@@ -1,10 +1,41 @@
 # Getting started
 
-Run the full stack with:
+**Architecture**
 
-`docker compose -f docker-compose.source.yaml -f docker-compose.streaming.yaml up`
+```mermaid
+flowchart LR
+    %% Source zone
+    subgraph Source
+        direction TB
+        Seeder@{ shape: rounded, label: "FastAPI Seeder" }
+        Flyway@{ shape: hex, label: "Flyway" }
+        Postgres@{ shape: cyl, label: "PostgreSQL" }
 
-Or layer by layer:
+        Seeder -- "writes" --> Postgres
+        Flyway -- "runs migrations" --> Postgres
+    end
+
+    %% Streaming zone
+    subgraph Streaming
+        direction TB
+        Connect@{ shape: procs, label: "Kafka Connect" }
+        SchemaRegistry@{ shape: rounded, label: "Schema Registry (Avro)" }
+        Kafka@{ shape: cyl, label: "Kafka" }
+        AKHQ@{ shape: stadium, label: "AKHQ UI" }
+        ConnectInit@{ shape: sl-rect, label: "Connect Init" }
+
+        Connect -- "registers schema" --> SchemaRegistry
+        Connect -- "produces data" --> Kafka
+        AKHQ --> Kafka
+        ConnectInit -- "registers connectors" --> Connect
+    end
+
+    %% Cross-zone
+    Connect -- "polls CDC with Debezium" --> Postgres
+
+```
+
+Running the stack, i.e., layers:
 
 - OLTP Source and Seeder: `docker compose -f docker-compose.source.yaml`
 - Streaming: `docker compose -f docker-compose.streaming.yaml`
