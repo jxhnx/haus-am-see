@@ -12,6 +12,18 @@ services:
       - kafka-net
     volumes:
       - ./kafka-data:/var/lib/kafka/data
+    healthcheck:
+      test:
+        [
+          'CMD',
+          'kafka-topics',
+          '--bootstrap-server',
+          'localhost:9092',
+          '--list',
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   schema-registry:
     build:
@@ -19,13 +31,19 @@ services:
       dockerfile: ./compose/Dockerfile.schemaRegistry
     container_name: schema-registry
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     ports:
       - '8081:8081'
     env_file:
       - .env
     networks:
       - kafka-net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8081/subjects']
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   connect:
     build:
@@ -33,14 +51,21 @@ services:
       dockerfile: ./compose/Dockerfile.connect
     container_name: connect
     depends_on:
-      - kafka
-      - schema-registry
+      kafka:
+        condition: service_healthy
+      schema-registry:
+        condition: service_healthy
     ports:
       - '8083:8083'
     env_file:
       - .env
     networks:
       - kafka-net
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:8083/connectors']
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
   akhq:
     build:
@@ -48,7 +73,8 @@ services:
       dockerfile: ./compose/Dockerfile.akhq
     container_name: akhq
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
     ports:
       - '9000:8080'
     env_file:
@@ -64,7 +90,8 @@ services:
       dockerfile: ./compose/Dockerfile.curl
     container_name: connect-init
     depends_on:
-      - connect
+      connect:
+        condition: service_healthy
     env_file:
       - .env
     volumes:
