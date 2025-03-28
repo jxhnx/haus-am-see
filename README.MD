@@ -18,7 +18,7 @@ docker compose -f docker-compose.streaming.yaml up
 
 1. **Seed the source DB:** Use FastAPI at [localhost:8000/docs](http://localhost:8000/docs) to insert an initial load or a continuous stream of records.
 2. **Verify in Postgres:** Connect to `localhost:4444` with user:password `postgres:postgres`.
-3. **Inspect Kafka:** Check AKHQ on [localhost:9000](http://localhost:9000) to view topics and schemas.
+3. **Inspect Kafka:** Check AKHQ on [localhost:8080](http://localhost:8080) to view topics and schemas.
 
 ### 🗺️ Architecture
 
@@ -80,7 +80,7 @@ Use the endpoints on [localhost:8000/docs](http://localhost:8000/docs) to run a 
 
 ## ⚡ Streaming (Kafka)
 
-Kafka is used for streaming CDC events from Postgres via Debezium. You can use the AKHQ UI at [localhost:9000](http://localhost:9000) to monitor/manage it.
+Kafka is used for streaming CDC events from Postgres via Debezium. You can use the AKHQ UI at [localhost:8080](http://localhost:8080) to monitor/manage it.
 
 ### 🔌 Connectors
 
