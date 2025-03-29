@@ -1,0 +1,21 @@
+{
+  "name": "s3-sink-storefront",
+  "config": {
+    "connector.class": "io.confluent.connect.s3.S3SinkConnector",
+    "tasks.max": "1",
+    "topics": "${S3_SINK_INGEST_TOPICS}",
+    "s3.bucket.name": "ingest",
+    "s3.region": "us-east-1",
+    "store.url": "http://host.docker.internal:9000",
+    "s3.credentials.provider.class": "com.amazonaws.auth.EnvironmentVariableCredentialsProvider",
+    "format.class": "io.confluent.connect.s3.format.avro.AvroFormat",
+    "schema.compatibility": "NONE",
+    "flush.size": "3",
+    "storage.class": "io.confluent.connect.s3.storage.S3Storage",
+    "value.converter": "io.confluent.connect.avro.AvroConverter",
+    "value.converter.schema.registry.url": "http://${SCHEMA_REGISTRY_HOST}",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "partitioner.class": "io.confluent.connect.storage.partitioner.DefaultPartitioner",
+    "topics.dir": "kafka"
+  }
+}
