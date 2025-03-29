@@ -94,6 +94,10 @@ All connectors are defined in `connectors/*.template.json`. envsubst is used to 
   ```bash
   curl http://localhost:8083/connectors
   ```
+- Check connector status:
+  ```bash
+  curl http://localhost:8083/connectors/postgres-source-storefront/status
+  ```
 - Delete connector:
   ```bash
   curl -X DELETE http://localhost:8083/connectors/postgres-source-storefront
