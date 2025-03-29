@@ -48,9 +48,8 @@ flowchart LR
         AKHQ@{ shape: stadium, label: "AKHQ UI" }
         ConnectInit@{ shape: sl-rect, label: "Connect Init" }
 
-        Connect -- "registers schema" --> SchemaRegistry
-        Connect -- "produces (sources)" --> Kafka
-        Connect -- "consumes (sinks)" --> Kafka
+        Connect -- "reads / writes schemas" --> SchemaRegistry
+        Connect -- "produces (source) / consumes (sink)" --> Kafka
         AKHQ --> Kafka
         ConnectInit -- "registers connectors" --> Connect
     end
