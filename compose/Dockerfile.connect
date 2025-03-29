@@ -12,3 +12,10 @@ RUN mkdir -p /usr/share/java/debezium-connector-postgresql && \
     curl -L https://hub-downloads.confluent.io/api/plugins/debezium/debezium-connector-postgresql/versions/${DEBEZIUM_VERSION}/debezium-debezium-connector-postgresql-${DEBEZIUM_VERSION}.zip -o /tmp/debezium.zip && \
     unzip /tmp/debezium.zip -d /usr/share/java/debezium-connector-postgresql && \
     rm /tmp/debezium.zip
+
+# Confluent S3 Sink connector
+ENV S3_CONNECTOR_VERSION=10.6.3
+RUN mkdir -p /usr/share/java/kafka-connect-s3 && \
+    curl -L https://hub-downloads.confluent.io/api/plugins/confluentinc/kafka-connect-s3/versions/${S3_CONNECTOR_VERSION}/confluentinc-kafka-connect-s3-${S3_CONNECTOR_VERSION}.zip -o /tmp/s3.zip && \
+    unzip /tmp/s3.zip -d /usr/share/java/kafka-connect-s3 && \
+    rm /tmp/s3.zip
