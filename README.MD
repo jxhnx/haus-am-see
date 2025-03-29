@@ -96,7 +96,7 @@ All connectors are defined in `connectors/*.template.json`. envsubst is used to 
   ```
 - Delete connector:
   ```bash
-  curl -X DELETE http://localhost:8083/connectors/storefront-postgres-connector
+  curl -X DELETE http://localhost:8083/connectors/postgres-source-storefront
   ```
 
 ### 🔄 Debezium CDC on Postgres
