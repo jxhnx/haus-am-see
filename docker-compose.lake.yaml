@@ -5,7 +5,7 @@ services:
       dockerfile: ./compose/Dockerfile.minio
     container_name: minio
     env_file:
-      - .env
+      - .lake.env
     ports:
       - '9000:9000'
       - '9001:9001'
@@ -29,7 +29,7 @@ services:
       minio:
         condition: service_healthy
     env_file:
-      - .env
+      - .lake.env
     networks:
       - lake-net
 

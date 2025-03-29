@@ -7,7 +7,7 @@ services:
     ports:
       - '9092:9092'
     env_file:
-      - .env
+      - .streaming.env
     networks:
       - kafka-net
     volumes:
@@ -36,7 +36,7 @@ services:
     ports:
       - '8081:8081'
     env_file:
-      - .env
+      - .streaming.env
     networks:
       - kafka-net
     healthcheck:
@@ -58,7 +58,7 @@ services:
     ports:
       - '8083:8083'
     env_file:
-      - .env
+      - .streaming.env
     networks:
       - kafka-net
     healthcheck:
@@ -78,7 +78,7 @@ services:
     ports:
       - '8080:8080'
     env_file:
-      - .env
+      - .streaming.env
     volumes:
       - ./compose/akhq.application.yml:/app/application.yml
     networks:
@@ -93,7 +93,7 @@ services:
       connect:
         condition: service_healthy
     env_file:
-      - .env
+      - .streaming.env
     volumes:
       - ./connectors:/connectors
     entrypoint: /bin/sh
