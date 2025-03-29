@@ -105,8 +105,6 @@ services:
           curl -X POST -H "Content-Type: application/json" --data "@$$json" http://connect:8083/connectors;
         done
       '
-    profiles:
-      - manual
     networks:
       - kafka-net
 
