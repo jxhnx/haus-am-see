@@ -1,4 +1,4 @@
 jupyter==1.1.1
-confluent-kafka[avro,schemaregistry]==2.8.2
+confluent-kafka[avro,schemaregistry]==2.9.0
 smart-open==7.1.0
 boto3==1.37.23
