@@ -44,7 +44,7 @@ flowchart LR
         direction TB
         Connect@{ shape: procs, label: "Kafka Connect" }
         SchemaRegistry@{ shape: rounded, label: "Schema Registry (Avro)" }
-        Kafka@{ shape: cyl, label: "Kafka" }
+        Kafka@{ shape: rounded, label: "Kafka" }
         AKHQ@{ shape: stadium, label: "AKHQ UI" }
         ConnectInit@{ shape: sl-rect, label: "Connect Init" }
 
@@ -57,14 +57,21 @@ flowchart LR
     %% Lake zone
     subgraph Lake
         direction TB
-        Ingest@{ shape: cylinder, label: "S3 Bucket: ingest" }
-        Stage@{ shape: cylinder, label: "S3 Bucket: stage" }
-        Serve@{ shape: cylinder, label: "S3 Bucket: serve" }
+        subgraph RawBucket ["S3 landing zone"]
+            direction TB
+            Raw@{ shape: rect, label: "raw/" }
+        end
+        subgraph LakehouseBucket ["S3 lakehouse"]
+            direction TB
+            Stage@{ shape: rect, label: "lakehouse/stage/" }
+            Shape@{ shape: rect, label: "lakehouse/shape/" }
+            Serve@{ shape: rect, label: "lakehouse/serve/" }
+        end
     end
 
     %% Cross-zone
     Connect -- "Postgres Source: polls CDC via Debezium" --> Postgres
-    Connect -- "S3 Sink: writes raw Avro" --> Ingest
+    Connect -- "S3 Sink: writes raw Avro" --> Raw
 ```
 
 ## 🧱 Source (Postgres)
@@ -136,9 +143,8 @@ Strategy, example with Postgres CDC:
 
 MinIO is used as AWS S3 equivalent object store. Zones (buckets):
 
-- `ingest`: raw data, e.g., Avro messages
-- `stage`: structured, cleaned data
-- `serve`: final business layer
+- `raw`: raw data, e.g., Avro messages
+- `lakehouse`: structured formats, e.g. Iceberg tables, with semantic sub-zones `stage`, `shape`, `serve` -- following a classic Medallion architecture.
 
 You can explore the lake buckets using the MinIO UI. Check [localhost:9001](http://localhost:9001) to monitor/manage buckets; user:password: `minio:minio123`.
 
