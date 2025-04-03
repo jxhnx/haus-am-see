@@ -8,10 +8,10 @@ services:
       - '9092:9092'
     env_file:
       - .streaming.env
+    volumes:
+      - kafka-data:/var/lib/kafka/data
     networks:
       - kafka-net
-    volumes:
-      - ./kafka-data:/var/lib/kafka/data
     healthcheck:
       test:
         [
@@ -84,29 +84,56 @@ services:
     networks:
       - kafka-net
 
-  connect-init:
+  connect-postgres:
     build:
       context: .
       dockerfile: ./compose/Dockerfile.curl
-    container_name: connect-init
+    container_name: connect-postgres
     depends_on:
       connect:
         condition: service_healthy
     env_file:
       - .streaming.env
+      - .source.env
     volumes:
       - ./connectors:/connectors
     entrypoint: /bin/sh
     command: >
       -c '
-        for template in /connectors/*.template.json; do
-          json="$${template%.template.json}.json"
-          envsubst < "$$template" > "$$json" &&
-          curl -X POST -H "Content-Type: application/json" --data "@$$json" http://connect:8083/connectors;
-        done
+        envsubst < /connectors/postgres-source.template.json > /connectors/postgres-source.json &&
+        curl -X POST -H "Content-Type: application/json" --data "@/connectors/postgres-source.json" http://connect:8083/connectors;
       '
     networks:
       - kafka-net
+    profiles:
+      - manual
+
+  connect-s3:
+    build:
+      context: .
+      dockerfile: ./compose/Dockerfile.curl
+    container_name: connect-s3
+    depends_on:
+      connect:
+        condition: service_healthy
+    env_file:
+      - .streaming.env
+      - .lake.env
+    volumes:
+      - ./connectors:/connectors
+    entrypoint: /bin/sh
+    command: >
+      -c '
+        envsubst < /connectors/s3-sink.template.json > /connectors/s3-sink.json &&
+        curl -X POST -H "Content-Type: application/json" --data "@/connectors/s3-sink.json" http://connect:8083/connectors;
+      '
+    networks:
+      - kafka-net
+    profiles:
+      - manual
+
+volumes:
+  kafka-data:
 
 networks:
   kafka-net:

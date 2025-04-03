@@ -2,12 +2,27 @@
 
 Data playground by the lake; meant to simulate end-to-end data pipelines.
 
-## 🌊 Getting Started
+## 🌊 Getting started
 
-Run the stack in layers:
+1. Compose up source services: `docker compose -f docker-compose.source.yaml up`
+
+   1. Use the FastAI seeder at [localhost:8000/docs](http://localhost:8000/docs) and run /seed/full to generate records in the source Postgres
+   2. [Optional] Connect to the Postgres `localhost:4444` with user:password `postgres:postgres`. You can find the generated records in the storefront db.
+
+2. Compose up streaming services: `docker compose -f docker-compose.streaming.yaml up`
+
+   1. Register the Postgres connector with `docker compose -f docker-compose.streaming.yaml run --rm connect-postgres`. This will initially full load all records and keep streaming via CDC.
+   2. [Optional] Check AKHQ on [localhost:8080](http://localhost:8080) to view the created topics and schemas.
+
+3. Compose up lake services: `docker compose -f docker-compose.lake.yaml up`
+
+   1. Check buckets (raw, lakehouse) at [localhost:9001](http://localhost:9001) with user:password `minio:minio123`.
+   2. Register the S3 connector with `docker compose -f docker-compose.streaming.yaml run --rm connect-s3`. This will initially full load all records and keep streaming the registered topics into the `raw` bucket.
+
+### Compose overview:
 
 ```bash
-# Source and Seeder
+# Source
 docker compose -f docker-compose.source.yaml up
 
 # Streaming
@@ -15,14 +30,11 @@ docker compose -f docker-compose.streaming.yaml up
 
 # Lake
 docker compose -f docker-compose.lake.yaml up
+
+# Register connectors
+docker compose -f docker-compose.streaming.yaml run --rm connect-postgres
+docker compose -f docker-compose.streaming.yaml run --rm connect-s3
 ```
-
-### 🔍 Does It Work? Do:
-
-1. **Seed the source DB:** Use FastAPI at [localhost:8000/docs](http://localhost:8000/docs) to insert an initial load or a continuous stream of records.
-2. **Verify in Postgres:** Connect to `localhost:4444` with user:password `postgres:postgres`.
-3. **Inspect Kafka:** Check AKHQ on [localhost:8080](http://localhost:8080) to view topics and schemas.
-4. **S3 Buckets:** Check buckets (ingest, stage, serve) at [localhost:9001](http://localhost:9001) with user:password `minio:minio123`.
 
 ### 🗺️ Architecture
 
