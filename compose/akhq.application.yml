@@ -1,6 +1,6 @@
 akhq:
   connections:
-    my-cluster:
+    local:
       properties:
         bootstrap.servers: 'kafka:29092'
       schema-registry:
