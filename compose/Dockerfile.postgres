@@ -1,6 +1,0 @@
-FROM postgres:17.4
-
-COPY ./compose/postgresql.custom.conf /etc/postgresql/postgresql.custom.conf
-
-ENTRYPOINT ["docker-entrypoint.sh"]
-CMD ["postgres", "-c", "config_file=/etc/postgresql/postgresql.custom.conf"]

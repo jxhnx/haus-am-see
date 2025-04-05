@@ -1,16 +1,27 @@
 services:
-  postgres:
+  postgres_source:
     build:
       context: .
-      dockerfile: ./compose/Dockerfile.postgres
-    container_name: postgres
+      dockerfile: ./compose/Dockerfile.postgres.source
+    container_name: postgres_source
     env_file:
-      - .env
+      - .source.env
     ports:
       - '4444:5432'
     volumes:
       - postgres-data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d
+      - ./compose/postgres_source.conf:/etc/postgresql/postgresql.custom.conf:ro
+      - ./compose/postgres_source_init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    command:
+      ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.custom.conf']
+    networks:
+      - source-net
+      - shared-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   flyway:
     build:
@@ -18,12 +29,14 @@ services:
       dockerfile: ./compose/Dockerfile.flyway
     container_name: flyway
     depends_on:
-      - postgres
+      - postgres_source
     env_file:
-      - .env
+      - .source.env
     volumes:
       - ./migrations:/flyway/sql
     command: migrate
+    networks:
+      - source-net
 
   seeder:
     build:
@@ -31,14 +44,30 @@ services:
       dockerfile: ./compose/Dockerfile.fastapi.seeder
     container_name: seeder
     depends_on:
-      - postgres
+      postgres_source:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
     env_file:
-      - .env
+      - .source.env
     ports:
       - '8000:8000'
     volumes:
       - ./seeder:/app
     command: fastapi dev --host 0.0.0.0 --port 8000
+    networks:
+      - source-net
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8000/health || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   postgres-data:
+
+networks:
+  source-net:
+    driver: bridge
+  shared-net:
+    driver: bridge

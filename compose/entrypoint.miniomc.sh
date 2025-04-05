@@ -4,12 +4,11 @@ set -e
 
 mc alias set local "$MINIO_ENDPOINT_INTERNAL" "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD"
 
-mc mb --ignore-existing local/ingest
-mc mb --ignore-existing local/stage
-mc mb --ignore-existing local/serve
+mc mb --ignore-existing local/raw
+mc mb --ignore-existing local/lakehouse
 
 echo "Setting public read-only bucket policies..."
-for bucket in ingest stage serve; do
+for bucket in raw lakehouse; do
 cat <<EOF > /tmp/${bucket}_policy.json
 {
   "Version": "2012-10-17",
