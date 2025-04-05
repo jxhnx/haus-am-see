@@ -118,10 +118,18 @@ Kafka is used for streaming CDC events from Postgres via Debezium to the S3 inge
 
 All connectors are defined in `connectors/*.template.json`. envsubst is used to substitute `.env` variables.
 
-- Register connectors:
+- Register connector:
+
   ```bash
-  docker compose -f docker-compose.streaming.yaml up connect-init
+  # Postgres Source
+  docker compose -f docker-compose.streaming.yaml up connect-postgres
+  # S3 Sink
+  docker compose -f docker-compose.streaming.yaml up connect-s3
+
+  # .. per curl
+  curl -X POST -H "Content-Type: application/json" --data "@/connectors/postgres-source.json" http://connect:8083/connectors;
   ```
+
 - List registered connectors:
   ```bash
   curl http://localhost:8083/connectors
@@ -134,6 +142,29 @@ All connectors are defined in `connectors/*.template.json`. envsubst is used to 
   ```bash
   curl -X DELETE http://localhost:8083/connectors/postgres-source-storefront
   ```
+
+To add a new connector, create a template in `connectors/*.template.json` and either register it manually (see command above) or add another service to `docker-compose.streaming.yaml`.
+
+#### S3 Sink:
+
+Example of resetting a sink connector:
+
+```bash
+# Delete connector
+curl -X DELETE http://localhost:8083/connectors/s3-sink-storefront
+
+# Reset offsets
+docker exec -it kafka kafka-consumer-groups \
+  --bootstrap-server localhost:9092 \
+  --group connect-s3-sink-storefront \
+  --reset-offsets \
+  --all-topics \
+  --to-earliest \
+  --execute
+
+# Add connector
+docker compose -f docker-compose.streaming.yaml run --rm connect-s3
+```
 
 ### 🔄 Debezium CDC on Postgres
 
