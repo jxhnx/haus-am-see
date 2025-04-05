@@ -8,3 +8,4 @@ connectors/*.json
 #####
 # default
 __pycache__
+.ipynb_checkpoints
