@@ -57,7 +57,7 @@ services:
     networks:
       - source-net
     healthcheck:
-      test: ['CMD-SHELL', 'wget -qO- http://localhost:8000/healthz || exit 1']
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8000/health || exit 1']
       interval: 5s
       timeout: 5s
       retries: 10

@@ -72,12 +72,15 @@ async def stop_ingestion():
     return {"status": "not running"}
 
 
-@app.get("/healthz")
-def healthz():
-    status = {
-        "app": "ok",
+@app.get("/health")
+def health():
+    return {"status": "ok"}
+
+
+@app.get("/status")
+def status():
+    return {
         "ingestion_running": bool(
             app.state.ingestion_task and not app.state.ingestion_task.done()
-        ),
+        )
     }
-    return status
