@@ -16,6 +16,11 @@ services:
       ['postgres', '-c', 'config_file=/etc/postgresql/postgresql.custom.conf']
     networks:
       - source-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}']
+      interval: 10s
+      timeout: 5s
+      retries: 5
 
   flyway:
     build:
@@ -38,7 +43,10 @@ services:
       dockerfile: ./compose/Dockerfile.fastapi.seeder
     container_name: seeder
     depends_on:
-      - postgres_source
+      postgres_source:
+        condition: service_healthy
+      flyway:
+        condition: service_completed_successfully
     env_file:
       - .source.env
     ports:
@@ -48,6 +56,11 @@ services:
     command: fastapi dev --host 0.0.0.0 --port 8000
     networks:
       - source-net
+    healthcheck:
+      test: ['CMD-SHELL', 'wget -qO- http://localhost:8000/healthz || exit 1']
+      interval: 5s
+      timeout: 5s
+      retries: 10
 
 volumes:
   postgres-data:
