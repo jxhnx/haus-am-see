@@ -1,0 +1,126 @@
+name: Data Pipeline CI e2e
+
+on:
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  test-data-pipeline-e2e:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Compose
+        run: docker compose version
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          pip install -r scripts/requirements.txt
+
+      # --- PHASE 1: SOURCE ---
+      - name: Start source services
+        run: docker compose -f docker-compose.source.yaml up -d --wait
+
+      - name: Seed data
+        run: |
+          curl --fail -X POST http://localhost:8000/seed/full
+
+      # --- PHASE 2: STREAMING ---
+      - name: Start streaming services
+        run: docker compose -f docker-compose.streaming.yaml up -d kafka schema-registry connect --wait
+
+      - name: Register Postgres connector
+        run: docker compose -f docker-compose.streaming.yaml run --rm connect-postgres
+
+      - name: Check Postgres connector state
+        run: |
+          echo "⏳ Waiting for 'postgres-source-storefront' connector to be RUNNING..."
+          for i in {1..5}; do
+            STATUS=$(curl -s http://localhost:8083/connectors/postgres-source-storefront/status | jq -r '.connector.state')
+            echo "Attempt $i: Connector state is $STATUS"
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "✅ Connector is running."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ Connector did not reach RUNNING state in time."
+          exit 1
+
+      # --- PHASE 3: LAKE ---
+      - name: Start Minio S3
+        run: docker compose -f docker-compose.lake.yaml up -d minio mc
+
+      - name: Register S3 connector
+        run: docker compose -f docker-compose.streaming.yaml run --rm connect-s3
+
+      - name: Check S3 connector state
+        run: |
+          echo "⏳ Waiting for 's3-sink-storefront' connector to be RUNNING..."
+          for i in {1..5}; do
+            STATUS=$(curl -s http://localhost:8083/connectors/s3-sink-storefront/status | jq -r '.connector.state')
+            echo "Attempt $i: Connector state is $STATUS"
+            if [ "$STATUS" = "RUNNING" ]; then
+              echo "✅ S3 connector is running."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "❌ S3 connector did not reach RUNNING state in time."
+          exit 1
+
+      - name: Monitor S3 ingestion
+        env:
+          AWS_ACCESS_KEY_ID: minio
+          AWS_SECRET_ACCESS_KEY: minio123
+          AWS_REGION: us-east-1
+        run: |
+          BUCKET_NAME=raw
+          PREFIX=kafka/
+          CHECK_INTERVAL=5
+          STALL_THRESHOLD=65  # matches rotate.schedule.interval.ms
+
+          echo "⏳ Waiting for ingestion to settle in s3://$BUCKET_NAME/$PREFIX ..."
+
+          LAST_COUNT=0
+          STALL_TIME=0
+
+          while true; do
+            CURRENT_COUNT=$(aws --endpoint-url http://localhost:9000 s3 ls s3://$BUCKET_NAME/$PREFIX --recursive | grep '\.avro$' | wc -l)
+            echo "📦 Found $CURRENT_COUNT .avro files in S3..."
+
+            if [ "$CURRENT_COUNT" -eq "$LAST_COUNT" ]; then
+              STALL_TIME=$((STALL_TIME + CHECK_INTERVAL))
+              echo "⏸ No change detected. Stalled for ${STALL_TIME}s"
+            else
+              STALL_TIME=0
+            fi
+
+            if [ "$STALL_TIME" -ge "$STALL_THRESHOLD" ]; then
+              echo "✅ Ingestion appears complete after $STALL_TIME seconds of no new files."
+              exit 0
+            fi
+
+            LAST_COUNT=$CURRENT_COUNT
+            sleep $CHECK_INTERVAL
+          done
+
+      - name: Verify records in S3
+        run: python scripts/verify_s3_data.py
+
+      # --- CLEANUP ---
+      - name: Tear down all services
+        if: always()
+        run: |
+          docker compose -f docker-compose.lake.yaml down -v
+          docker compose -f docker-compose.streaming.yaml down -v
+          docker compose -f docker-compose.source.yaml down -v
