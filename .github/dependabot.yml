@@ -24,7 +24,7 @@ updates:
           - '*'
 
   - package-ecosystem: 'pip'
-    directory: '/jupyter'
+    directory: '/scripts'
     schedule:
       interval: 'weekly'
     groups:
