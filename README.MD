@@ -166,7 +166,7 @@ The buckets are created and initialized via the MinIO client `mc` during `docker
 
 ### 📓 Notebooks
 
-Jupyter notebooks can be found in `jupyter/`. Make sure to add the requirements in `jupyter/requirements.txt`.
+Jupyter notebooks can be found in `scripts/`. Make sure to add the requirements in `scripts/requirements.txt`.
 
 ### 🧼 Linting
 
