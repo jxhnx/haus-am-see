@@ -2,8 +2,8 @@
   "name": "postgres-source-storefront",
   "config": {
     "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
-    "database.hostname": "host.docker.internal",
-    "database.port": "4444",
+    "database.hostname": "${POSTGRES_HOST}",
+    "database.port": "5432",
     "database.user": "${DEBEZIUM_USER}",
     "database.password": "${DEBEZIUM_PASSWORD}",
     "database.dbname": "storefront",

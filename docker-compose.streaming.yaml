@@ -61,6 +61,7 @@ services:
       - .streaming.env
     networks:
       - kafka-net
+      - shared-net
     healthcheck:
       test: ['CMD', 'curl', '-f', 'http://localhost:8083/connectors']
       interval: 30s
@@ -137,4 +138,6 @@ volumes:
 
 networks:
   kafka-net:
+    driver: bridge
+  shared-net:
     driver: bridge
