@@ -1,4 +1,4 @@
-FROM confluentinc/cp-kafka-connect:7.8.2
+FROM confluentinc/cp-kafka-connect:7.9.1
 
 ENV CONNECT_PLUGIN_PATH=/usr/share/java
 
