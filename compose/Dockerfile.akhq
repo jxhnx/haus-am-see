@@ -1,1 +1,1 @@
-FROM tchiotludo/akhq:0.25.1
+FROM tchiotludo/akhq:0.26.0
