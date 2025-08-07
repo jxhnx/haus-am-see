@@ -17,13 +17,13 @@ repos:
       - id: detect-private-key
 
   - repo: https://github.com/pycontribs/mirrors-prettier
-    rev: v3.5.3
+    rev: v3.6.2
     hooks:
       - id: prettier
         args: ['--tab-width', '2', '--single-quote']
 
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.11
+    rev: v0.12.7
     hooks:
       - id: ruff
         args: [--fix, --exit-non-zero-on-fix]
