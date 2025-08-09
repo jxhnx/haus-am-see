@@ -2,20 +2,17 @@
 
 Data playground by the lake; meant to simulate end-to-end data pipelines.
 
-## 🌊 Getting started
+## Getting started
 
 1. Compose up source services: `docker compose -f docker-compose.source.yaml up`
-
    1. Use the FastAI seeder at [localhost:8000/docs](http://localhost:8000/docs) and run /seed/full to generate records in the source Postgres
    2. [Optional] Connect to the Postgres `localhost:4444` with user:password `postgres:postgres`. You can find the generated records in the storefront db.
 
 2. Compose up streaming services: `docker compose -f docker-compose.streaming.yaml up`
-
    1. Register the Postgres connector with `docker compose -f docker-compose.streaming.yaml run --rm connect-postgres`. This will initially full load all records and keep streaming via CDC.
    2. [Optional] Check AKHQ on [localhost:8080](http://localhost:8080) to view the created topics and schemas.
 
 3. Compose up lake services: `docker compose -f docker-compose.lake.yaml up`
-
    1. Check buckets (raw, lakehouse) at [localhost:9001](http://localhost:9001) with user:password `minio:minio123`.
    2. Register the S3 connector with `docker compose -f docker-compose.streaming.yaml run --rm connect-s3`. This will initially full load all records and keep streaming the registered topics into the `raw` bucket.
 
@@ -36,7 +33,7 @@ docker compose -f docker-compose.streaming.yaml run --rm connect-postgres
 docker compose -f docker-compose.streaming.yaml run --rm connect-s3
 ```
 
-### 🗺️ Architecture
+### Architecture
 
 ```mermaid
 flowchart LR
@@ -86,7 +83,7 @@ flowchart LR
     Connect -- "S3 Sink: writes raw Avro" --> Raw
 ```
 
-## 🧱 Source (Postgres)
+## Source (Postgres)
 
 Postgres is used as OLTP source. The default `storefront` database is meant to simulate a web shop.
 
@@ -97,7 +94,7 @@ Postgres is used as OLTP source. The default `storefront` database is meant to s
   ```
 - If meant to be persisted, add the new database to `postgres-init/init.sql`.
 
-### 📦 Migrations
+### Migrations
 
 Flyway is used as migration tool.
 
@@ -106,15 +103,15 @@ Flyway is used as migration tool.
   docker compose -f docker-compose.source.yaml up flyway
   ```
 
-### 🌱 FastAPI Seeder
+### FastAPI Seeder
 
 Use the endpoints on [localhost:8000/docs](http://localhost:8000/docs) to run a initial fill or start/stop continuous, simulated traffic.
 
-## ⚡ Streaming (Kafka)
+## Streaming (Kafka)
 
 Kafka is used for streaming CDC events from Postgres via Debezium to the S3 ingest sink in the lake. You can use the AKHQ UI at [localhost:8080](http://localhost:8080) to monitor/manage it.
 
-### 🔌 Connectors
+### Connectors
 
 All connectors are defined in `connectors/*.template.json`. envsubst is used to substitute `.env` variables.
 
@@ -166,7 +163,7 @@ docker exec -it kafka kafka-consumer-groups \
 docker compose -f docker-compose.streaming.yaml run --rm connect-s3
 ```
 
-### 🔄 Debezium CDC on Postgres
+### Debezium CDC on Postgres
 
 Currently, CDC for Postgres is handled by Debezium. This includes:
 
@@ -175,14 +172,14 @@ Currently, CDC for Postgres is handled by Debezium. This includes:
 - the proper connector config `connectors/debezium-postgres.template.json`
 - Postgres' write-ahead log set to allow logical replication, see `wal_level=logical` in `compose/postgresql.custom.conf`
 
-### 🧵 Topics
+### Topics
 
 Strategy, example with Postgres CDC:
 
 - Default setting `delete.retention.ms` is `86400000` (1 day). That is, either downstream is polling all messages or the connector has to be reset to push an initial snapshot to Kafka. To reset the Debezium connector, delete it and re-run the connect-init.
 - Default setting `cleanup.policy` is `delete`. However, `compact,delete` can make sense for a lakehouse downstream.
 
-## 🌊 Lake (S3 via MinIO)
+## Lake (S3 via MinIO)
 
 MinIO is used as AWS S3 equivalent object store. Zones (buckets):
 
@@ -193,12 +190,12 @@ You can explore the lake buckets using the MinIO UI. Check [localhost:9001](http
 
 The buckets are created and initialized via the MinIO client `mc` during `docker-compose.lake.yaml` startup, defined in `compose/entrypoint.miniomc.sh`.
 
-## 🧪 Development
+## Development
 
-### 📓 Notebooks
+### Notebooks
 
 Jupyter notebooks can be found in `scripts/`. Make sure to add the requirements in `scripts/requirements.txt`.
 
-### 🧼 Linting
+### Linting
 
 Pre-commit is used for linting. Run `pre-commit install` once to initialize it for this repo.
