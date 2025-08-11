@@ -172,6 +172,61 @@ Currently, CDC for Postgres is handled by Debezium. This includes:
 - the proper connector config `connectors/debezium-postgres.template.json`
 - Postgres' write-ahead log set to allow logical replication, see `wal_level=logical` in `compose/postgresql.custom.conf`
 
+Debezium adds per default additional information to each event. Example event:
+
+```python
+[{'before': None,
+  'after': {'id': 1,
+   'customer_id': 473,
+   'status': 'cancelled',
+   'total': Decimal('1124.84'),
+   'created_at': 1743859191675403},
+  'source': {'version': '2.5.4.Final',
+   'connector': 'postgresql',
+   'name': 'storefront',
+   'ts_ms': 1743859335320,
+   'snapshot': 'first_in_data_collection',
+   'db': 'storefront',
+   'sequence': '[null,"40034744"]',
+   'schema': 'public',
+   'table': 'orders',
+   'txId': 776,
+   'lsn': 40034744,
+   'xmin': None},
+  'op': 'r',
+  'ts_ms': 1743859344573,
+  'transaction': None},
+]
+```
+
+- `after`: the current row state (used for inserts, updates, snapshots)
+- `before`: previous row state (only present for updates and deletes)
+- `op`: the operation type:
+  - `'c'` = create
+  - `'u'` = update
+  - `'d'` = delete
+  - `'r'` = snapshot (initial load)
+- `ts_ms`: Debezium event timestamp in milliseconds (Kafka-side)
+
+**Inside `source`:**
+
+- `version`: Debezium connector version
+- `connector`: connector type (`postgresql`, `mysql`, etc.)
+- `name`: logical replication slot / Kafka topic prefix (`storefront`)
+- `ts_ms`: source commit timestamp (PostgreSQL `clock_timestamp()`)
+- `snapshot`: snapshot phase flag (e.g. `'first_in_data_collection'`)
+- `db`: source database name
+- `schema`: source schema name (e.g. `'public'`)
+- `table`: source table name (e.g. `'orders'`)
+- `sequence`: logical decoding LSN sequence (for ordering)
+- `txId`: transaction ID (Postgres `txid_current()`)
+- `lsn`: Postgres Log Sequence Number (WAL position)
+- `xmin`: Postgres transaction snapshot xmin (for MVCC tracking)
+
+**Other top-level fields:**
+
+- `transaction`: info on wrapping transaction (may include order, ID)
+
 ### Topics
 
 Strategy, example with Postgres CDC:
