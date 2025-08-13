@@ -9,7 +9,7 @@ from pyspark.sql.functions import col
 from lakehouse.spark_session import get_spark
 
 STAGE_CONFIG = Path(__file__).parent / "stage_tables.yaml"
-STAGE_NAMESPACE = "lakehouse.stage"
+STAGE_NAMESPACE = "lakehouse.stage.storefront"
 
 
 def load_config() -> dict[str, Any]:
