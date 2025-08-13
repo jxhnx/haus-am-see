@@ -76,11 +76,29 @@ flowchart LR
             Shape@{ shape: rect, label: "lakehouse/shape/" }
             Serve@{ shape: rect, label: "lakehouse/serve/" }
         end
+
+      %% Processing (Spark)
+      subgraph Spark ["Spark Cluster"]
+          direction TB
+          SparkMaster@{ shape: procs, label: "Spark Master" }
+          SparkWorker@{ shape: procs, label: "Spark Worker" }
+          StageJob@{ shape: sl-rect, label: "Stage Ingest Job" }
+
+        StageJob -- "submit job" --> SparkMaster
+        SparkMaster <-- "task scheduling & execution" --> SparkWorker
+      end
+
     end
 
-    %% Cross-zone
+
+    %% Cross-zone wiring
     Connect -- "Postgres Source: polls CDC via Debezium" --> Postgres
     Connect -- "S3 Sink: writes raw Avro" --> Raw
+
+    %% Raw -> Stage via Spark
+    Raw -- "read Avro" --> StageJob
+    StageJob -- "write Iceberg" --> Stage
+
 ```
 
 ## Source (Postgres)
