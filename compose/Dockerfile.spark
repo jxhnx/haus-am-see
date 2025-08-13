@@ -1,0 +1,19 @@
+FROM maven:3.9-eclipse-temurin-17 AS deps
+WORKDIR /build
+COPY compose/deps/pom.xml .
+RUN mvn -q -DoutputDirectory=target/jars dependency:copy-dependencies
+
+FROM bitnami/spark:3.5.5
+
+USER root
+RUN install_packages curl python3 python3-pip && ln -sf /usr/bin/python3 /usr/bin/python && pip3 install --upgrade pip
+WORKDIR /home/spark
+RUN mkdir -p /home/spark/.jupyter /home/spark/work /opt/bitnami/spark/jars
+ENV PYTHONPATH="${PYTHONPATH}:/home/spark/work"
+
+COPY --from=deps /build/target/jars/ /opt/bitnami/spark/jars/
+
+COPY compose/requirements/spark-python.txt /tmp/requirements.txt
+RUN pip3 install -r /tmp/requirements.txt && rm /tmp/requirements.txt
+
+USER 1001
