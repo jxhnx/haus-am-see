@@ -1,0 +1,162 @@
+version: 1
+sources:
+  - name: storefront_cdc
+    description: Debezium CDC topics landed by Kafka Connect in raw/kafka/
+    tables:
+      - name: customers
+        description: storefront.public.customers CDC stream
+        source_path: s3a://raw/kafka/storefront.public.customers/
+        format: avro
+        filter_op:
+          - c
+          - u
+          - r
+        schema:
+          - name: address
+            type: string
+            source: after.address
+          - name: city
+            type: string
+            source: after.city
+          - name: country
+            type: string
+            source: after.country
+          - name: created_at
+            type: bigint
+            source: after.created_at
+          - name: email
+            type: string
+            source: after.email
+          - name: full_name
+            type: string
+            source: after.full_name
+          - name: id
+            type: bigint
+            source: after.id
+        partitions:
+          - event_date
+        table_properties:
+          format-version: '2'
+          write.distribution-mode: hash
+      - name: order_items
+        description: storefront.public.order_items CDC stream
+        source_path: s3a://raw/kafka/storefront.public.order_items/
+        format: avro
+        filter_op:
+          - c
+          - u
+          - r
+        schema:
+          - name: id
+            type: bigint
+            source: after.id
+          - name: order_id
+            type: bigint
+            source: after.order_id
+          - name: price_at_purchase
+            type: decimal(6,2)
+            source: after.price_at_purchase
+          - name: product_id
+            type: bigint
+            source: after.product_id
+          - name: quantity
+            type: bigint
+            source: after.quantity
+        partitions:
+          - event_date
+        table_properties:
+          format-version: '2'
+          write.distribution-mode: hash
+      - name: orders
+        description: storefront.public.orders CDC stream
+        source_path: s3a://raw/kafka/storefront.public.orders/
+        format: avro
+        filter_op:
+          - c
+          - u
+          - r
+        schema:
+          - name: created_at
+            type: bigint
+            source: after.created_at
+          - name: customer_id
+            type: bigint
+            source: after.customer_id
+          - name: id
+            type: bigint
+            source: after.id
+          - name: status
+            type: string
+            source: after.status
+          - name: total
+            type: decimal(7,2)
+            source: after.total
+        partitions:
+          - event_date
+        table_properties:
+          format-version: '2'
+          write.distribution-mode: hash
+      - name: payments
+        description: storefront.public.payments CDC stream
+        source_path: s3a://raw/kafka/storefront.public.payments/
+        format: avro
+        filter_op:
+          - c
+          - u
+          - r
+        schema:
+          - name: amount
+            type: decimal(7,2)
+            source: after.amount
+          - name: id
+            type: bigint
+            source: after.id
+          - name: order_id
+            type: bigint
+            source: after.order_id
+          - name: paid_at
+            type: bigint
+            source: after.paid_at
+          - name: payment_method
+            type: string
+            source: after.payment_method
+          - name: status
+            type: string
+            source: after.status
+        partitions:
+          - event_date
+        table_properties:
+          format-version: '2'
+          write.distribution-mode: hash
+      - name: products
+        description: storefront.public.products CDC stream
+        source_path: s3a://raw/kafka/storefront.public.products/
+        format: avro
+        filter_op:
+          - c
+          - u
+          - r
+        schema:
+          - name: category
+            type: string
+            source: after.category
+          - name: created_at
+            type: bigint
+            source: after.created_at
+          - name: id
+            type: bigint
+            source: after.id
+          - name: name
+            type: string
+            source: after.name
+          - name: price
+            type: decimal(6,2)
+            source: after.price
+          - name: stock_quantity
+            type: bigint
+            source: after.stock_quantity
+        partitions:
+          - event_date
+        table_properties:
+          format-version: '2'
+          write.distribution-mode: hash
