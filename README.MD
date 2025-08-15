@@ -16,6 +16,8 @@ Data playground by the lake; meant to simulate end-to-end data pipelines.
    1. Check buckets (raw, lakehouse) at [localhost:9001](http://localhost:9001) with user:password `minio:minio123`.
    2. Register the S3 connector with `docker compose -f docker-compose.streaming.yaml run --rm connect-s3`. This will initially full load all records and keep streaming the registered topics into the `raw` bucket.
 
+4. Run the ingest from `raw/` to `stage/` in the data lake using Spark. See [Spark processing](#spark-processing).
+
 ### Compose overview:
 
 ```bash
@@ -252,7 +254,7 @@ Strategy, example with Postgres CDC:
 - Default setting `delete.retention.ms` is `86400000` (1 day). That is, either downstream is polling all messages or the connector has to be reset to push an initial snapshot to Kafka. To reset the Debezium connector, delete it and re-run the connect-init.
 - Default setting `cleanup.policy` is `delete`. However, `compact,delete` can make sense for a lakehouse downstream.
 
-## Lake (S3 via MinIO)
+## Lake
 
 MinIO is used as AWS S3 equivalent object store. Zones (buckets):
 
@@ -262,6 +264,19 @@ MinIO is used as AWS S3 equivalent object store. Zones (buckets):
 You can explore the lake buckets using the MinIO UI. Check [localhost:9001](http://localhost:9001) to monitor/manage buckets; user:password: `minio:minio123`.
 
 The buckets are created and initialized via the MinIO client `mc` during `docker-compose.lake.yaml` startup, defined in `compose/entrypoint.miniomc.sh`.
+
+### Spark processing
+
+The Spark cluster contains a master and a worker node to simulate scaling. See `docker-compose.lake.yaml` for their setup.
+
+#### Raw → Stage (bronze)
+
+- For running Spark queries, use the JupyterLab instance on [localhost:8888](http://localhost:8888). It uses the same image as the Spark Master/Worker.
+- Run `spark/jobs/storefront_raw_stage.py` via the `spark/notebooks/ingest_to_stage.ipynb` notebook to ingest Avro from `raw/kafka/` into Iceberg tables under `lakehouse/stage/storefront/`.
+
+The ingest uses `spark/jobs/stage_tables.yaml` (dbt inspired syntax) to project, cast, and partition columns. It sets `event_date` for partitioning, either from a business timestamp (e.g., `created_at`) or from Kafka's ingest time (`ts_ms`) as fallback. For lineage, the source is recorded as `event_date_source`.
+
+`scripts/snippets.ipynb` contains a schema-config generator and Polars snippets for inspecting generated Iceberg tables.
 
 ## Development
 
