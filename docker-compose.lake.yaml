@@ -47,7 +47,7 @@ services:
       - '8085:8080'
       - '7077:7077'
     command: >
-      bash -c "/opt/bitnami/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master"
+      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.master.Master --host spark-master"
     networks:
       - lake-net
     healthcheck:
@@ -68,7 +68,7 @@ services:
     depends_on:
       - spark-master
     command: >
-      bash -c "/opt/bitnami/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"
+      bash -c "/opt/spark/bin/spark-class org.apache.spark.deploy.worker.Worker spark://spark-master:7077"
     networks:
       - lake-net
 
@@ -79,14 +79,17 @@ services:
     container_name: spark-notebook
     env_file:
       - .lake.env
-    environment:
-      - JUPYTER_CONFIG_DIR=/home/spark/.jupyter
     ports:
       - '8888:8888'
     networks:
       - lake-net
     command: >
-      jupyter-lab --ip=0.0.0.0 --port=8888 --no-browser --ServerApp.token='' --ServerApp.root_dir=/home/spark/work --ServerApp.workspace_dir=/home/spark/.jupyter/lab/workspaces
+      jupyter-lab
+      --ip=0.0.0.0
+      --port=8888
+      --no-browser
+      --IdentityProvider.token=''
+      --ServerApp.root_dir=/home/spark/work
     volumes:
       - ./spark:/home/spark/work
 

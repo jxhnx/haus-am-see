@@ -1,19 +1,46 @@
+# Resolve JVM deps (Iceberg, Hadoop/AWS, Avro)
 FROM maven:3.9-eclipse-temurin-17 AS deps
 WORKDIR /build
 COPY compose/deps/pom.xml .
 RUN mvn -q -DoutputDirectory=target/jars dependency:copy-dependencies
 
-FROM bitnami/spark:3.5.5
+# Spark runtime
+FROM spark:3.5.6-scala2.12-java17-python3-ubuntu
 
 USER root
-RUN install_packages curl python3 python3-pip && ln -sf /usr/bin/python3 /usr/bin/python && pip3 install --upgrade pip
+
+# Install Python 3.11 venv
+RUN set -eux; \
+    apt update; \
+    apt install -y --no-install-recommends software-properties-common ca-certificates; \
+    add-apt-repository -y ppa:deadsnakes/ppa; \
+    apt update; \
+    apt install -y --no-install-recommends python3.11 python3.11-venv; \
+    python3.11 -m venv /opt/venv; \
+    /opt/venv/bin/python -m ensurepip --upgrade; \
+    /opt/venv/bin/python -m pip install --no-cache-dir --upgrade pip setuptools wheel; \
+    rm -rf /var/lib/apt/lists/*
+
+ENV PATH=/opt/venv/bin:$PATH \
+    PYSPARK_PYTHON=/opt/venv/bin/python \
+    PYSPARK_DRIVER_PYTHON=/opt/venv/bin/python
+
+# Workspace layout
 WORKDIR /home/spark
-RUN mkdir -p /home/spark/.jupyter /home/spark/work /opt/bitnami/spark/jars
-ENV PYTHONPATH="${PYTHONPATH}:/home/spark/work"
+RUN mkdir -p \
+      /home/spark/work \
+      /opt/spark/jars
 
-COPY --from=deps /build/target/jars/ /opt/bitnami/spark/jars/
+RUN chown -R spark:spark /home/spark
 
+# JVM deps
+COPY --from=deps /build/target/jars/ /opt/spark/jars/
+
+# Python deps
 COPY compose/requirements/spark-python.txt /tmp/requirements.txt
-RUN pip3 install -r /tmp/requirements.txt && rm /tmp/requirements.txt
+RUN /opt/venv/bin/python -m pip install --no-cache-dir -r /tmp/requirements.txt \
+ && /opt/venv/bin/python -m pip check \
+ && rm /tmp/requirements.txt
 
-USER 1001
+USER spark
+ENV PYTHONPATH="/home/spark/work"

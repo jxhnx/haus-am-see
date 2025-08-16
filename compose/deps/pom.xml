@@ -1,14 +1,17 @@
-<project xmlns="http://maven.apache.org/POM/4.0.0"  mlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 https://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <groupId>haus-am-see</groupId>
   <artifactId>spark-deps</artifactId>
-  <version>1.0.0</version>
+  <version>1.0.1</version>
+
   <properties>
     <scala.binary>2.12</scala.binary>
-    <spark.version>3.5.5</spark.version>
-    <iceberg.version>1.8.1</iceberg.version>
-    <hadoop.version>3.3.6</hadoop.version>
-    <aws.sdk.version>1.12.691</aws.sdk.version>
+    <spark.version>3.5.6</spark.version>
+    <iceberg.version>1.9.2</iceberg.version>
+    <hadoop.version>3.3.4</hadoop.version>
+    <aws.sdk.version>1.12.262</aws.sdk.version>
   </properties>
 
   <dependencyManagement>
@@ -24,19 +27,21 @@
   </dependencyManagement>
 
   <dependencies>
+    <!-- Iceberg runtime for Spark 3.5 + Scala 2.12 -->
     <dependency>
       <groupId>org.apache.iceberg</groupId>
       <artifactId>iceberg-spark-runtime-3.5_${scala.binary}</artifactId>
       <version>${iceberg.version}</version>
     </dependency>
 
+    <!-- Spark extras -->
     <dependency>
       <groupId>org.apache.spark</groupId>
       <artifactId>spark-avro_${scala.binary}</artifactId>
       <version>${spark.version}</version>
     </dependency>
 
-    <!-- Must match Hadoop base image -->
+    <!-- S3 support (Hadoop + AWS SDK) -->
     <dependency>
       <groupId>org.apache.hadoop</groupId>
       <artifactId>hadoop-aws</artifactId>

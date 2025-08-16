@@ -9,7 +9,8 @@ from pyspark.sql.functions import col
 from lakehouse.spark_session import get_spark
 
 STAGE_CONFIG = Path(__file__).parent / "stage_tables.yaml"
-STAGE_NAMESPACE = "lakehouse.stage.storefront"
+STAGE_NAMESPACE = "stage.storefront"
+TABLE_CATALOG = "lakehouse"
 
 
 def load_config() -> dict[str, Any]:
@@ -60,7 +61,7 @@ def ingest_table(spark: SparkSession, table_cfg: dict[str, Any]) -> None:
     partitions = table_cfg.get("partitions", [])
     user_props = table_cfg.get("table_properties", {})
 
-    table_fqn = f"{STAGE_NAMESPACE}.{name}"
+    table_fqn = f"{TABLE_CATALOG}.{STAGE_NAMESPACE}.{name}"
     print(f"Ingesting '{name}' from {source_path}")
 
     raw = spark.read.format(fmt).load(source_path)
@@ -70,7 +71,8 @@ def ingest_table(spark: SparkSession, table_cfg: dict[str, Any]) -> None:
         print(f"No rows to write for {table_fqn}")
         return
 
-    spark.sql(f"CREATE NAMESPACE IF NOT EXISTS {STAGE_NAMESPACE}")
+    spark.sql(f"CREATE NAMESPACE IF NOT EXISTS {TABLE_CATALOG}.stage")
+    spark.sql(f"CREATE NAMESPACE IF NOT EXISTS {TABLE_CATALOG}.stage.storefront")
 
     default_props = {
         "format-version": "2",
