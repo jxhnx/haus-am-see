@@ -269,6 +269,14 @@ The buckets are created and initialized via the MinIO client `mc` during `docker
 
 The Spark cluster contains a master and a worker node to simulate scaling. See `docker-compose.lake.yaml` for their setup.
 
+### Spark Iceberg catalog config:
+
+- `spark.sql.catalog.<catalog>`: bind a Spark catalog name to an Iceberg implementation class
+  e.g. `spark.sql.catalog.lakehouse=org.apache.iceberg.spark.SparkCatalog`
+- `spark.sql.catalog.<catalog>.type`: Iceberg catalog backend (`hadoop`, `rest`, etc.); in Hadoop, tables are laid out directly in a filesystem like S3/MinIO
+- `spark.sql.catalog.<catalog>.warehouse`: root storage path for all namespaces/tables (bucket + optional prefix)
+  e.g. `s3a://lakehouse/` → `lakehouse.stage.storefront.customers` maps to `s3a://lakehouse/stage/storefront/customers/`
+
 #### Raw → Stage (bronze)
 
 - For running Spark queries, use the JupyterLab instance on [localhost:8888](http://localhost:8888). It uses the same image as the Spark Master/Worker.
