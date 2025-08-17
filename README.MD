@@ -267,7 +267,13 @@ The buckets are created and initialized via the MinIO client `mc` during `docker
 
 ### Spark processing
 
-The Spark cluster contains a master and a worker node to simulate scaling. See `docker-compose.lake.yaml` for their setup.
+The Spark cluster contains a master and a worker node to simulate scaling. See `docker-compose.lake.yaml` for their setup. Included services:
+
+- `spark-master`: master node and scheduler; UI at [localhost:8085](http://localhost:8085)
+- `spark-worker`: worker node
+- `spark-notebook`: used for creating and managing jobs. Use:
+  - JupyterLab at [localhost:8888](http://localhost:8888) for a notebook UI
+  - The Spark Job UI at [localhost:4040](http://localhost:4040), available only while a job is running
 
 ### Spark Iceberg catalog config:
 
@@ -279,8 +285,8 @@ The Spark cluster contains a master and a worker node to simulate scaling. See `
 
 #### Raw → Stage (bronze)
 
-- For running Spark queries, use the JupyterLab instance on [localhost:8888](http://localhost:8888). It uses the same image as the Spark Master/Worker.
-- Run `spark/jobs/storefront_raw_stage.py` via the `spark/notebooks/ingest_to_stage.ipynb` notebook to ingest Avro from `raw/kafka/` into Iceberg tables under `lakehouse/stage/storefront/`.
+- For running Spark queries, use the JupyterLab instance at [localhost:8888](http://localhost:8888). It uses the same image as the Spark Master/Worker.
+- Run `spark/jobs/storefront_raw_stage.py` via JupyterLab or directly with the container by running `docker compose -f docker-compose.lake.yaml run --rm spark-notebook python /home/spark/work/jobs/storefront_raw_stage.py`
 
 The ingest uses `spark/jobs/stage_tables.yaml` (dbt inspired syntax) to project, cast, and partition columns. It sets `event_date` for partitioning, either from a business timestamp (e.g., `created_at`) or from Kafka's ingest time (`ts_ms`) as fallback. For lineage, the source is recorded as `event_date_source`.
 
