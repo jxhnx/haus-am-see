@@ -43,17 +43,17 @@ jobs:
 
       - name: Check Postgres connector state
         run: |
-          echo "⏳ Waiting for 'postgres-source-storefront' connector to be RUNNING..."
+          echo "Waiting for 'postgres-source-storefront' connector to be RUNNING..."
           for i in {1..5}; do
             STATUS=$(curl -s http://localhost:8083/connectors/postgres-source-storefront/status | jq -r '.connector.state')
             echo "Attempt $i: Connector state is $STATUS"
             if [ "$STATUS" = "RUNNING" ]; then
-              echo "✅ Connector is running."
+              echo "Connector is running."
               exit 0
             fi
             sleep 5
           done
-          echo "❌ Connector did not reach RUNNING state in time."
+          echo "Connector did not reach RUNNING state in time."
           exit 1
 
       # --- PHASE 3: LAKE ---
@@ -65,17 +65,17 @@ jobs:
 
       - name: Check S3 connector state
         run: |
-          echo "⏳ Waiting for 's3-sink-storefront' connector to be RUNNING..."
+          echo "Waiting for 's3-sink-storefront' connector to be RUNNING..."
           for i in {1..5}; do
             STATUS=$(curl -s http://localhost:8083/connectors/s3-sink-storefront/status | jq -r '.connector.state')
             echo "Attempt $i: Connector state is $STATUS"
             if [ "$STATUS" = "RUNNING" ]; then
-              echo "✅ S3 connector is running."
+              echo "S3 connector is running."
               exit 0
             fi
             sleep 5
           done
-          echo "❌ S3 connector did not reach RUNNING state in time."
+          echo "S3 connector did not reach RUNNING state in time."
           exit 1
 
       - name: Monitor S3 ingestion
@@ -89,24 +89,24 @@ jobs:
           CHECK_INTERVAL=5
           STALL_THRESHOLD=65  # matches rotate.schedule.interval.ms
 
-          echo "⏳ Waiting for ingestion to settle in s3://$BUCKET_NAME/$PREFIX ..."
+          echo "Waiting for ingestion to settle in s3://$BUCKET_NAME/$PREFIX ..."
 
           LAST_COUNT=0
           STALL_TIME=0
 
           while true; do
             CURRENT_COUNT=$(aws --endpoint-url http://localhost:9000 s3 ls s3://$BUCKET_NAME/$PREFIX --recursive | grep '\.avro$' | wc -l)
-            echo "📦 Found $CURRENT_COUNT .avro files in S3..."
+            echo "Found $CURRENT_COUNT .avro files in S3..."
 
             if [ "$CURRENT_COUNT" -eq "$LAST_COUNT" ]; then
               STALL_TIME=$((STALL_TIME + CHECK_INTERVAL))
-              echo "⏸ No change detected. Stalled for ${STALL_TIME}s"
+              echo "No change detected. Stalled for ${STALL_TIME}s"
             else
               STALL_TIME=0
             fi
 
             if [ "$STALL_TIME" -ge "$STALL_THRESHOLD" ]; then
-              echo "✅ Ingestion appears complete after $STALL_TIME seconds of no new files."
+              echo "Ingestion appears complete after $STALL_TIME seconds of no new files."
               exit 0
             fi
 
@@ -115,7 +115,18 @@ jobs:
           done
 
       - name: Verify records in S3
-        run: python scripts/verify_s3_data.py
+        run: python scripts/verify_raw_data.py
+
+      # --- PHASE 4: STAGE (Spark -> Iceberg) ---
+      - name: Start Spark services
+        run: docker compose -f docker-compose.lake.yaml up -d spark-master spark-worker --wait
+
+      - name: Run Spark ingest
+        run: |
+          docker compose -f docker-compose.lake.yaml run --rm spark-notebook python /home/spark/work/jobs/storefront_raw_stage.py
+
+      - name: Verify Iceberg stage
+        run: python scripts/verify_stage_data.py
 
       # --- CLEANUP ---
       - name: Tear down all services

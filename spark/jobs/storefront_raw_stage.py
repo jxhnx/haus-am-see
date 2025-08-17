@@ -96,7 +96,7 @@ def ingest_table(spark: SparkSession, table_cfg: dict[str, Any]) -> None:
 
 
 def main() -> None:
-    spark = get_spark("bronze_ingest_job")
+    spark = get_spark("stage_ingest_job")
     config = load_config()
     for table in config["sources"][0]["tables"]:
         ingest_table(spark, table)
