@@ -31,3 +31,21 @@ updates:
       jupyter-requirements:
         patterns:
           - '*'
+
+  - package-ecosystem: 'maven'
+    directory: '/compose/spark'
+    schedule:
+      interval: 'weekly'
+    groups:
+      spark-maven:
+        patterns:
+          - '*'
+
+  - package-ecosystem: 'pip'
+    directory: '/compose/spark'
+    schedule:
+      interval: 'weekly'
+    groups:
+      spark-requirements:
+        patterns:
+          - '*'

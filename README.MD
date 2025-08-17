@@ -16,6 +16,10 @@ Data playground by the lake; meant to simulate end-to-end data pipelines.
    1. Check buckets (raw, lakehouse) at [localhost:9001](http://localhost:9001) with user:password `minio:minio123`.
    2. Register the S3 connector with `docker compose -f docker-compose.streaming.yaml run --rm connect-s3`. This will initially full load all records and keep streaming the registered topics into the `raw` bucket.
 
+4. Run the ingest from `raw/` to `stage/` in the data lake using Spark.
+   1. Run the ingest per `docker compose -f docker-compose.lake.yaml run --rm spark-notebook python /home/spark/work/jobs/storefront_raw_stage.py`. See [Spark processing](#spark-processing) for more details about running Spark queries.
+   2. Either check the newly created Iceberg tables in S3 on [localhost:9001](http://localhost:9001) (`lakehouse/stage/`) or have a look at the `scripts/snippets.ipynb` notebook for checking its data.
+
 ### Compose overview:
 
 ```bash
@@ -31,6 +35,9 @@ docker compose -f docker-compose.lake.yaml up
 # Register connectors
 docker compose -f docker-compose.streaming.yaml run --rm connect-postgres
 docker compose -f docker-compose.streaming.yaml run --rm connect-s3
+
+# Run Spark jobs
+docker compose -f docker-compose.lake.yaml run --rm spark-notebook python /home/spark/work/jobs/storefront_raw_stage.py
 ```
 
 ### Architecture
@@ -76,11 +83,29 @@ flowchart LR
             Shape@{ shape: rect, label: "lakehouse/shape/" }
             Serve@{ shape: rect, label: "lakehouse/serve/" }
         end
+
+      %% Processing (Spark)
+      subgraph Spark ["Spark Cluster"]
+          direction TB
+          SparkMaster@{ shape: procs, label: "Spark Master" }
+          SparkWorker@{ shape: procs, label: "Spark Worker" }
+          StageJob@{ shape: sl-rect, label: "Stage Ingest Job" }
+
+        StageJob -- "submit job" --> SparkMaster
+        SparkMaster <-- "task scheduling & execution" --> SparkWorker
+      end
+
     end
 
-    %% Cross-zone
+
+    %% Cross-zone wiring
     Connect -- "Postgres Source: polls CDC via Debezium" --> Postgres
     Connect -- "S3 Sink: writes raw Avro" --> Raw
+
+    %% Raw -> Stage via Spark
+    Raw -- "read Avro" --> StageJob
+    StageJob -- "write Iceberg" --> Stage
+
 ```
 
 ## Source (Postgres)
@@ -172,6 +197,61 @@ Currently, CDC for Postgres is handled by Debezium. This includes:
 - the proper connector config `connectors/debezium-postgres.template.json`
 - Postgres' write-ahead log set to allow logical replication, see `wal_level=logical` in `compose/postgresql.custom.conf`
 
+Debezium adds per default additional information to each event. Example event:
+
+```python
+[{'before': None,
+  'after': {'id': 1,
+   'customer_id': 473,
+   'status': 'cancelled',
+   'total': Decimal('1124.84'),
+   'created_at': 1743859191675403},
+  'source': {'version': '2.5.4.Final',
+   'connector': 'postgresql',
+   'name': 'storefront',
+   'ts_ms': 1743859335320,
+   'snapshot': 'first_in_data_collection',
+   'db': 'storefront',
+   'sequence': '[null,"40034744"]',
+   'schema': 'public',
+   'table': 'orders',
+   'txId': 776,
+   'lsn': 40034744,
+   'xmin': None},
+  'op': 'r',
+  'ts_ms': 1743859344573,
+  'transaction': None},
+]
+```
+
+- `after`: the current row state (used for inserts, updates, snapshots)
+- `before`: previous row state (only present for updates and deletes)
+- `op`: the operation type:
+  - `'c'` = create
+  - `'u'` = update
+  - `'d'` = delete
+  - `'r'` = snapshot (initial load)
+- `ts_ms`: Debezium event timestamp in milliseconds (Kafka-side)
+
+**Inside `source`:**
+
+- `version`: Debezium connector version
+- `connector`: connector type (`postgresql`, `mysql`, etc.)
+- `name`: logical replication slot / Kafka topic prefix (`storefront`)
+- `ts_ms`: source commit timestamp (PostgreSQL `clock_timestamp()`)
+- `snapshot`: snapshot phase flag (e.g. `'first_in_data_collection'`)
+- `db`: source database name
+- `schema`: source schema name (e.g. `'public'`)
+- `table`: source table name (e.g. `'orders'`)
+- `sequence`: logical decoding LSN sequence (for ordering)
+- `txId`: transaction ID (Postgres `txid_current()`)
+- `lsn`: Postgres Log Sequence Number (WAL position)
+- `xmin`: Postgres transaction snapshot xmin (for MVCC tracking)
+
+**Other top-level fields:**
+
+- `transaction`: info on wrapping transaction (may include order, ID)
+
 ### Topics
 
 Strategy, example with Postgres CDC:
@@ -179,7 +259,7 @@ Strategy, example with Postgres CDC:
 - Default setting `delete.retention.ms` is `86400000` (1 day). That is, either downstream is polling all messages or the connector has to be reset to push an initial snapshot to Kafka. To reset the Debezium connector, delete it and re-run the connect-init.
 - Default setting `cleanup.policy` is `delete`. However, `compact,delete` can make sense for a lakehouse downstream.
 
-## Lake (S3 via MinIO)
+## Lake
 
 MinIO is used as AWS S3 equivalent object store. Zones (buckets):
 
@@ -189,6 +269,33 @@ MinIO is used as AWS S3 equivalent object store. Zones (buckets):
 You can explore the lake buckets using the MinIO UI. Check [localhost:9001](http://localhost:9001) to monitor/manage buckets; user:password: `minio:minio123`.
 
 The buckets are created and initialized via the MinIO client `mc` during `docker-compose.lake.yaml` startup, defined in `compose/entrypoint.miniomc.sh`.
+
+### Spark processing
+
+The Spark cluster contains a master and a worker node to simulate scaling. See `docker-compose.lake.yaml` for their setup. Included services:
+
+- `spark-master`: master node and scheduler; UI at [localhost:8085](http://localhost:8085)
+- `spark-worker`: worker node
+- `spark-notebook`: used for creating and managing jobs. Use:
+  - JupyterLab at [localhost:8888](http://localhost:8888) for a notebook UI
+  - The Spark Job UI at [localhost:4040](http://localhost:4040), available only while a job is running
+
+### Spark Iceberg catalog config:
+
+- `spark.sql.catalog.<catalog>`: bind a Spark catalog name to an Iceberg implementation class
+  e.g. `spark.sql.catalog.lakehouse=org.apache.iceberg.spark.SparkCatalog`
+- `spark.sql.catalog.<catalog>.type`: Iceberg catalog backend (`hadoop`, `rest`, etc.); in Hadoop, tables are laid out directly in a filesystem like S3/MinIO
+- `spark.sql.catalog.<catalog>.warehouse`: root storage path for all namespaces/tables (bucket + optional prefix)
+  e.g. `s3a://lakehouse/` → `lakehouse.stage.storefront.customers` maps to `s3a://lakehouse/stage/storefront/customers/`
+
+#### Raw → Stage (bronze)
+
+- For running Spark queries, use the JupyterLab instance at [localhost:8888](http://localhost:8888). It uses the same image as the Spark Master/Worker.
+- Run `spark/jobs/storefront_raw_stage.py` via JupyterLab or directly with the container by running `docker compose -f docker-compose.lake.yaml run --rm spark-notebook python /home/spark/work/jobs/storefront_raw_stage.py`
+
+The ingest uses `spark/jobs/stage_tables.yaml` (dbt inspired syntax) to project, cast, and partition columns. It sets `event_date` for partitioning, either from a business timestamp (e.g., `created_at`) or from Kafka's ingest time (`ts_ms`) as fallback. For lineage, the source is recorded as `event_date_source`.
+
+`scripts/snippets.ipynb` contains a schema-config generator and Polars snippets for inspecting generated Iceberg tables.
 
 ## Development
 
