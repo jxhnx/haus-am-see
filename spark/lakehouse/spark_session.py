@@ -5,6 +5,7 @@ from pyspark.sql import SparkSession
 def get_spark(app_name: str = "LakehouseJob") -> SparkSession:
     return (
         SparkSession.builder.appName(app_name)
+        .master(os.environ["SPARK_MASTER_URL"])
         # Iceberg HadoopCatalog config
         .config("spark.sql.catalog.lakehouse", "org.apache.iceberg.spark.SparkCatalog")
         .config("spark.sql.catalog.lakehouse.type", "hadoop")
