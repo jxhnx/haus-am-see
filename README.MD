@@ -16,7 +16,9 @@ Data playground by the lake; meant to simulate end-to-end data pipelines.
    1. Check buckets (raw, lakehouse) at [localhost:9001](http://localhost:9001) with user:password `minio:minio123`.
    2. Register the S3 connector with `docker compose -f docker-compose.streaming.yaml run --rm connect-s3`. This will initially full load all records and keep streaming the registered topics into the `raw` bucket.
 
-4. Run the ingest from `raw/` to `stage/` in the data lake using Spark. See [Spark processing](#spark-processing).
+4. Run the ingest from `raw/` to `stage/` in the data lake using Spark.
+   1. Run the ingest per `docker compose -f docker-compose.lake.yaml run --rm spark-notebook python /home/spark/work/jobs/storefront_raw_stage.py`. See [Spark processing](#spark-processing) for more details about running Spark queries.
+   2. Either check the newly created Iceberg tables in S3 on [localhost:9001](http://localhost:9001) (`lakehouse/stage/`) or have a look at the `scripts/snippets.ipynb` notebook for checking its data.
 
 ### Compose overview:
 
@@ -33,6 +35,9 @@ docker compose -f docker-compose.lake.yaml up
 # Register connectors
 docker compose -f docker-compose.streaming.yaml run --rm connect-postgres
 docker compose -f docker-compose.streaming.yaml run --rm connect-s3
+
+# Run Spark jobs
+docker compose -f docker-compose.lake.yaml run --rm spark-notebook python /home/spark/work/jobs/storefront_raw_stage.py
 ```
 
 ### Architecture
