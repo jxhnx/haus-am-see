@@ -81,6 +81,8 @@ for t in tables_cfg:
     stage_count = lf.select(pl.len()).collect().item()
 
     expected_cols = {c["name"]: yaml_type_to_canonical(c["type"]) for c in t["schema"]}
+    expected_cols["event_date"] = "date"
+
     missing = [c for c in expected_cols if c not in stage_schema]
     mismatches = [
         f"{c}: expected {expected_cols[c]}, got {pl_dtype_to_canonical(stage_schema[c])}"
@@ -90,6 +92,14 @@ for t in tables_cfg:
     ]
     schema_match = len(missing) == 0 and len(mismatches) == 0
 
+    if "event_date" in stage_schema:
+        event_date_non_nulls = (
+            lf.select(pl.col("event_date").is_not_null().sum()).collect().item()
+        )
+        event_date_ok = event_date_non_nulls > 0
+    else:
+        event_date_ok = False
+
     records.append(
         {
             "table": name,
@@ -97,6 +107,7 @@ for t in tables_cfg:
             "stage_parquet_count": stage_count,
             "counts_match": raw_count == stage_count,
             "schema_match": schema_match,
+            "event_date_non_null": event_date_ok,
             "issues": "; ".join(missing + mismatches),
         }
     )
@@ -104,5 +115,9 @@ for t in tables_cfg:
 df = pd.DataFrame(records)
 print(df)
 
-if not (df["counts_match"].all() and df["schema_match"].all()):
+if not (
+    df["counts_match"].all()
+    and df["schema_match"].all()
+    and df["event_date_non_null"].all()
+):
     raise Exception("Stage verification failed: mismatch detected!")
