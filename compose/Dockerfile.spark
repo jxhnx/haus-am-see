@@ -1,5 +1,5 @@
 # Resolve JVM deps (Iceberg, Hadoop/AWS, Avro)
-FROM maven:3.9-eclipse-temurin-17 AS deps
+FROM maven:3-eclipse-temurin-24 AS deps
 WORKDIR /build
 COPY compose/spark/pom.xml .
 RUN mvn -q -DoutputDirectory=target/jars dependency:copy-dependencies
