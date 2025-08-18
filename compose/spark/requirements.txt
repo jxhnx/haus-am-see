@@ -1,4 +1,4 @@
-jupyterlab==4.3.6
+jupyterlab==4.4.6
 numpy==2.2.4
-pandas==2.2.3
-pyspark==3.5.6
+pandas==2.3.1
+pyspark==4.0.0
