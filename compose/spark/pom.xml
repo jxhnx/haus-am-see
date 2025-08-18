@@ -10,8 +10,8 @@
     <scala.binary>2.12</scala.binary>
     <spark.version>3.5.6</spark.version>
     <iceberg.version>1.9.2</iceberg.version>
-    <hadoop.version>3.3.4</hadoop.version>
-    <aws.sdk.version>1.12.262</aws.sdk.version>
+    <hadoop.version>3.4.1</hadoop.version>
+    <aws.sdk.version>1.12.788</aws.sdk.version>
   </properties>
 
   <dependencyManagement>
