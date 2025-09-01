@@ -1,5 +1,5 @@
 fastapi[standard]==0.116.1
 psycopg[binary,pool]==3.2.9
 SQLAlchemy==2.0.43
-faker==37.5.3
+faker==37.6.0
 python-dotenv==1.1.1
